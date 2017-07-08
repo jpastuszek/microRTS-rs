@@ -1,7 +1,7 @@
 mod game;
 mod ai;
 
-use game::{Player, AI, Owned, Game, EntityType, EntityID, Unit, Map, Coordinates};
+use game::{Player, AI, Owned, Game, EntityType, Unit, Map, Coordinates};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
 

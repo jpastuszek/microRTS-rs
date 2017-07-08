@@ -1,5 +1,5 @@
-use game::{AI, EmptyPersistentState, GameView, Desire, Entity, EntityType, Unit, EntityID,
-           Location, Direction, Tile};
+use game::{AI, EmptyPersistentState, GameView, Desire, Entity, EntityType, Unit, Location,
+           Direction, Tile};
 
 #[derive(Default)]
 pub struct TestAI;
@@ -8,7 +8,7 @@ impl AI for TestAI {
     type PersistentState = EmptyPersistentState;
     fn update<'p: 'g, 's: 'g, 'm: 'g, 'g>(
         &mut self,
-        sate: &'s mut Self::PersistentState,
+        _sate: &'s mut Self::PersistentState,
         view: GameView<'p, 'm, 'g>,
     ) -> Vec<Desire> {
         let mut actions = Vec::new();
