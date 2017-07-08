@@ -85,7 +85,7 @@ impl<'m> IntoIterator for Row<'m> {
 
 impl Map {
     pub fn new(width: usize, height: usize) -> Map {
-        //TODO: make Dimmension type that need to by build and unwrapped
+        //TODO: make Dimension type that need to by build and unwrapped
         if width == 0 || height == 0 {
             panic!("Map cannot have 0 dimension!");
         }

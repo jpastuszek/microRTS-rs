@@ -49,7 +49,7 @@ impl<'p, 'm> Game<'p, 'm> {
         entity: &'e Entity<'m, 'p>,
         direction: Direction,
     ) -> Result<Location<'m>, GameRuleViolation<'p, 'm, 'e>> {
-        let &Entity(Location(ref coordinates, _), ref entity_type) = entity;
+        let &Entity(_id, Location(ref coordinates, _), ref entity_type) = entity;
         match entity_type {
             &EntityType::Unit(owner, _) if owner == player => {
                 let new_location = self.map.location(coordinates.in_direction(direction));
@@ -98,7 +98,7 @@ const GRID_HOR_LINE: &'static str = "---";
 const GRID_VERT_LINE: &'static str = "|";
 const GRID_EMPTY: &'static str = "   ";
 const GRID_WALL: &'static str = "XXX";
-const ENTITY_WORKER: &'static str = " W ";
+const ENTITY_WORKER: &'static str = "W";
 
 impl<'p, 'm> Display for Game<'p, 'm> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
@@ -117,9 +117,9 @@ impl<'p, 'm> Display for Game<'p, 'm> {
                     Location(_, &Tile::Plain) => {
                         //TODO: merge join entities (ordered by coord, next() for peek().coord ==
                         // tile.coord
-                        if let Some(entity) = self.entities.get_by_location(&location) {
+                        if let Some(&Entity(id, _, ref _entity_type)) = self.entities.get_by_location(&location) {
                             // TODO: render different types
-                            write!(f, "{}", ENTITY_WORKER)?
+                            write!(f, "{}{:02}", ENTITY_WORKER, id.0)?
                         } else {
                             write!(f, "{}", GRID_EMPTY)?
                         }

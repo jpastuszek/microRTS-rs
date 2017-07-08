@@ -31,10 +31,10 @@ pub enum EntityType<'p> {
 // Using Copy object to reference entities to allow them to be modified, removed
 // etc. while AI are holding this
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
-pub struct EntityID(usize);
+pub struct EntityID(pub usize);
 
 #[derive(Debug)]
-pub struct Entity<'m, 'p>(pub Location<'m>, pub EntityType<'p>);
+pub struct Entity<'m, 'p>(pub EntityID, pub Location<'m>, pub EntityType<'p>);
 
 #[derive(Debug)]
 pub struct Entities<'p, 'm> {
@@ -73,7 +73,7 @@ impl<'p, 'm> Entities<'p, 'm> {
                 }
 
                 self.location_index.insert(location.clone(), entity_id);
-                self.entities.insert(entity_id, Entity(location, entity))
+                self.entities.insert(entity_id, Entity(entity_id, location, entity))
             }),
             _ => Err(EntitiesError::InvalidPlacementLocation(location)),
         }
@@ -98,8 +98,8 @@ impl<'p, 'm> Entities<'p, 'm> {
             return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
         }
 
-        if let Some(ref mut entity) = self.entities.get_mut(&entity_id) {
-            entity.0 = location;
+        if let Some(&mut Entity(_, ref mut entity_location, _)) = self.entities.get_mut(&entity_id) {
+            *entity_location = location;
             Ok(())
         } else {
             Err(EntitiesError::NoEntity(*entity_id))

@@ -17,7 +17,7 @@ impl AI for TestAI {
             match entity {
                 // Desires cannot hold references to anything
                 // inside Game or we can't modify it later on
-                &Entity(Location(ref coordinates, _), EntityType::Unit(owner, Unit::Worker))
+                &Entity(_, Location(ref coordinates, _), EntityType::Unit(owner, Unit::Worker))
                     if owner == view.player => {
                     if let Location(_pos, &Tile::Plain) =
                         view.game.map.location(
