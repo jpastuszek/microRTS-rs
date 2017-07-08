@@ -73,7 +73,10 @@ impl<'p, 'm> Entities<'p, 'm> {
                 }
 
                 self.location_index.insert(location.clone(), entity_id);
-                self.entities.insert(entity_id, Entity(entity_id, location, entity))
+                self.entities.insert(
+                    entity_id,
+                    Entity(entity_id, location, entity),
+                )
             }),
             _ => Err(EntitiesError::InvalidPlacementLocation(location)),
         }
@@ -98,9 +101,13 @@ impl<'p, 'm> Entities<'p, 'm> {
             return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
         }
 
-        if let Some(&mut Entity(entity_id, ref mut entity_location, _)) = self.entities.get_mut(&entity_id) {
+        if let Some(&mut Entity(entity_id, ref mut entity_location, _)) =
+            self.entities.get_mut(&entity_id)
+        {
             // Update indexes first
-            self.location_index.remove(&entity_location).expect("bad location_index");
+            self.location_index.remove(&entity_location).expect(
+                "bad location_index",
+            );
             self.location_index.insert(location.clone(), entity_id);
 
             // Update entity

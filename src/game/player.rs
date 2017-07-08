@@ -5,14 +5,14 @@ use game::{GameView, Desire};
 #[derive(Debug)]
 pub struct Player {
     pub name: String,
-    pub colour: Colour
+    pub colour: Colour,
 }
 
 impl Player {
     pub fn new<N: Into<String>>(name: N, colour: Colour) -> Player {
         Player {
             name: name.into(),
-            colour: colour
+            colour: colour,
         }
     }
 

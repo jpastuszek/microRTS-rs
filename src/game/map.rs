@@ -41,7 +41,8 @@ pub struct Map {
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub struct Location<'m>(pub Coordinates, pub &'m Tile);
 
-pub struct RowIter<'m>(MapIter<Enumerate<SliceIter<'m, Vec<Tile>>>, fn((usize, &'m Vec<Tile>)) -> Row<'m>>);
+type ESIter<'i, T> = Enumerate<SliceIter<'i, T>>;
+pub struct RowIter<'m>(MapIter<ESIter<'m, Vec<Tile>>, fn((usize, &'m Vec<Tile>)) -> Row<'m>>);
 
 impl<'m> Iterator for RowIter<'m> {
     type Item = Row<'m>;
@@ -53,12 +54,12 @@ impl<'m> Iterator for RowIter<'m> {
 
 pub struct Row<'m> {
     pub row_no: usize,
-    pub tiles: &'m [Tile]
+    pub tiles: &'m [Tile],
 }
 
 pub struct RowLocationsIter<'m> {
     row_no: usize,
-    row_iter: Enumerate<SliceIter<'m, Tile>>
+    row_iter: ESIter<'m, Tile>,
 }
 
 impl<'m> Iterator for RowLocationsIter<'m> {
@@ -75,12 +76,12 @@ impl<'m> IntoIterator for Row<'m> {
     type Item = Location<'m>;
     type IntoIter = RowLocationsIter<'m>;
 
-     fn into_iter(self) -> RowLocationsIter<'m> {
-         RowLocationsIter {
-             row_no: self.row_no,
-             row_iter: self.tiles.iter().enumerate()
-         }
-     }
+    fn into_iter(self) -> RowLocationsIter<'m> {
+        RowLocationsIter {
+            row_no: self.row_no,
+            row_iter: self.tiles.iter().enumerate(),
+        }
+    }
 }
 
 impl Map {
@@ -110,14 +111,16 @@ impl Map {
         fn map(row: (usize, &Vec<Tile>)) -> Row {
             Row {
                 row_no: row.0,
-                tiles: row.1.as_slice()
+                tiles: row.1.as_slice(),
             }
         }
         RowIter(self.tiles.iter().enumerate().map(map))
     }
 
     pub fn get_mut_tile(&mut self, coordinates: Coordinates) -> Option<&mut Tile> {
-        self.tiles.get_mut(coordinates.0).and_then(|row| row.get_mut(coordinates.1))
+        self.tiles.get_mut(coordinates.0).and_then(|row| {
+            row.get_mut(coordinates.1)
+        })
     }
 
     pub fn location(&self, coordinates: Coordinates) -> Location {

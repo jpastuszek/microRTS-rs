@@ -8,7 +8,8 @@ use std::ptr;
 use itertools::Itertools;
 
 pub use self::map::{Map, Direction, Coordinates, Location, Tile};
-pub use self::entity::{Entity, EntityType, Unit, Building, Resources, Entities, EntityID}; pub use self::player::{Player, Colour, AI, EmptyPersistentState, Owned};
+pub use self::entity::{Entity, EntityType, Unit, Building, Resources, Entities, EntityID};
+pub use self::player::{Player, Colour, AI, EmptyPersistentState, Owned};
 #[derive(Debug)]
 pub struct Game<'p, 'm> {
     name: String,
@@ -108,11 +109,26 @@ const ENTITY_RESOURCES: &'static str = "#";
 impl<'p, 'm> Display for Game<'p, 'm> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         fn write_grid_row_line(f: &mut fmt::Formatter, cels: usize) -> Result<(), fmt::Error> {
-            writeln!(f, "{}", [GRID_INTERSECTION].iter().cycle().take(cels + 1).join(GRID_HOR_LINE))
+            writeln!(
+                f,
+                "{}",
+                [GRID_INTERSECTION].iter().cycle().take(cels + 1).join(
+                    GRID_HOR_LINE,
+                )
+            )
         }
 
-        fn write_owned_entity(f: &mut fmt::Formatter, player: &Player, id: EntityID, symbol: &'static str) -> Result<(), fmt::Error> {
-            write!(f, "{}", player.colour.paint(format!("{}{:02}", symbol, id.0)))
+        fn write_owned_entity(
+            f: &mut fmt::Formatter,
+            player: &Player,
+            id: EntityID,
+            symbol: &'static str,
+        ) -> Result<(), fmt::Error> {
+            write!(
+                f,
+                "{}",
+                player.colour.paint(format!("{}{:02}", symbol, id.0))
+            )
         }
 
 
@@ -126,16 +142,35 @@ impl<'p, 'm> Display for Game<'p, 'm> {
                     Location(_, &Tile::Plain) => {
                         //TODO: merge join entities (ordered by coord, next() for peek().coord ==
                         // tile.coord
-                        if let Some(&Entity(id, _, ref entity_type)) = self.entities.get_by_location(&location) {
+                        if let Some(&Entity(id, _, ref entity_type)) =
+                            self.entities.get_by_location(&location)
+                        {
                             match *entity_type {
-                                EntityType::Unit(ref player, Unit::Worker) => write_owned_entity(f, player, id, ENTITY_WORKER)?,
-                                EntityType::Unit(ref player, Unit::Light) => write_owned_entity(f, player, id, ENTITY_LIGHT)?,
+                                EntityType::Unit(ref player, Unit::Worker) => {
+                                    write_owned_entity(f, player, id, ENTITY_WORKER)?
+                                }
+                                EntityType::Unit(ref player, Unit::Light) => {
+                                    write_owned_entity(f, player, id, ENTITY_LIGHT)?
+                                }
 
-                                EntityType::Unit(ref player, Unit::Heavy) => write_owned_entity(f, player, id, ENTITY_HEAVY)?,
+                                EntityType::Unit(ref player, Unit::Heavy) => {
+                                    write_owned_entity(f, player, id, ENTITY_HEAVY)?
+                                }
 
-                                EntityType::Building(ref player, Building::Base(Resources(res))) => write!(f, "{}", player.colour.paint(format!("{}{:02}", ENTITY_BASE, res)))?,
-                                EntityType::Building(ref player, Building::Barracks) => write_owned_entity(f, player, id, ENTITY_BARRACS)?,
-                                EntityType::Resource(res) => write!(f, "{}{:2}", ENTITY_RESOURCES, res)?,
+                                EntityType::Building(ref player,
+                                                     Building::Base(Resources(res))) => {
+                                    write!(
+                                        f,
+                                        "{}",
+                                        player.colour.paint(format!("{}{:02}", ENTITY_BASE, res))
+                                    )?
+                                }
+                                EntityType::Building(ref player, Building::Barracks) => {
+                                    write_owned_entity(f, player, id, ENTITY_BARRACS)?
+                                }
+                                EntityType::Resource(res) => {
+                                    write!(f, "{}{:2}", ENTITY_RESOURCES, res)?
+                                }
                             }
                         } else {
                             write!(f, "{}", GRID_EMPTY)?

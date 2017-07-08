@@ -4,7 +4,8 @@ extern crate ansi_term;
 mod game;
 mod ai;
 
-use game::{Player, Colour, AI, Owned, Game, EntityType, Unit, Building, Resources, Map, Tile, Coordinates};
+use game::{Player, Colour, AI, Owned, Game, EntityType, Unit, Building, Resources, Map, Tile,
+           Coordinates};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
 
