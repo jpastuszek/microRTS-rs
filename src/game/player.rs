@@ -2,14 +2,12 @@ use game::{GameView, Desire};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Player {
-    pub name: String
+    pub name: String,
 }
 
 impl Player {
     pub fn new<N: Into<String>>(name: N) -> Player {
-        Player {
-            name: name.into()
-        }
+        Player { name: name.into() }
     }
 
     // called per game round
@@ -36,7 +34,7 @@ pub trait AI: Default {
     fn update<'p: 'g, 's: 'g, 'm: 'g, 'g>(
         &mut self,
         sate: &'s mut Self::PersistentState,
-        view: GameView<'p, 'm, 'g>
+        view: GameView<'p, 'm, 'g>,
     ) -> Vec<Desire>;
 }
 

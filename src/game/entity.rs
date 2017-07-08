@@ -18,7 +18,7 @@ pub struct Resources(pub u64);
 #[derive(Debug)]
 pub enum Building {
     Base(Resources),
-    Barracks
+    Barracks,
 }
 
 #[derive(Debug)]
@@ -47,7 +47,7 @@ pub struct Entities<'p, 'm> {
 pub enum EntitiesError<'m> {
     NoEntity(EntityID),
     InvalidPlacementLocation(Location<'m>),
-    LocationAlreadyTaken(Location<'m>, EntityID)
+    LocationAlreadyTaken(Location<'m>, EntityID),
 }
 
 impl<'p, 'm> Entities<'p, 'm> {
@@ -55,7 +55,7 @@ impl<'p, 'm> Entities<'p, 'm> {
         Entities {
             entities: Default::default(),
             location_index: Default::default(),
-            entity_id_seq: 0..
+            entity_id_seq: 0..,
         }
     }
 
@@ -69,7 +69,7 @@ impl<'p, 'm> Entities<'p, 'm> {
                 let entity_id = EntityID(self.entity_id_seq.next().expect("out of IDs"));
 
                 if let Some(entity_id) = self.location_index.get(&location) {
-                    return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id))
+                    return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
                 }
 
                 self.location_index.insert(location.clone(), entity_id);
@@ -84,12 +84,18 @@ impl<'p, 'm> Entities<'p, 'm> {
     }
 
     pub fn get_by_location<'e>(&'e self, location: &Location<'m>) -> Option<&'e Entity<'m, 'p>> {
-        self.location_index.get(&location).and_then(|entity_id| self.get_by_entity_id(entity_id))
+        self.location_index.get(&location).and_then(|entity_id| {
+            self.get_by_entity_id(entity_id)
+        })
     }
 
-    pub fn set_location_by_entity_id<'e>(&'e mut self, entity_id: &EntityID, location: Location<'m>) -> Result<(), EntitiesError> {
+    pub fn set_location_by_entity_id<'e>(
+        &'e mut self,
+        entity_id: &EntityID,
+        location: Location<'m>,
+    ) -> Result<(), EntitiesError> {
         if let Some(entity_id) = self.location_index.get(&location) {
-            return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id))
+            return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
         }
 
         if let Some(ref mut entity) = self.entities.get_mut(&entity_id) {
@@ -103,7 +109,6 @@ impl<'p, 'm> Entities<'p, 'm> {
     pub fn iter<'e>(&'e self) -> EntitiesIter<'p, 'm, 'e> {
         EntitiesIter { iter: self.entities.iter() }
     }
-
 }
 
 impl<'p: 'e, 'm: 'e, 'e> IntoIterator for &'e Entities<'p, 'm> {

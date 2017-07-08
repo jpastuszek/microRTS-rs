@@ -7,7 +7,7 @@ impl Coordinates {
             Direction::Up => Coordinates(self.0, self.1 - 1),
             Direction::Down => Coordinates(self.0, self.1 + 1),
             Direction::Left => Coordinates(self.0 - 1, self.1),
-            Direction::Right => Coordinates(self.0 + 1, self.1)
+            Direction::Right => Coordinates(self.0 + 1, self.1),
         }
     }
 }

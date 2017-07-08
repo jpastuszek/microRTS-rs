@@ -24,17 +24,29 @@ fn main() {
         let mut game = Game::new("foo", round, &map);
 
         game.entities
-            .place(game.map.location(Coordinates(0, 0)), EntityType::Resource(10))
+            .place(
+                game.map.location(Coordinates(0, 0)),
+                EntityType::Resource(10),
+            )
             .unwrap();
         game.entities
-            .place(game.map.location(Coordinates(7, 7)), EntityType::Resource(10))
+            .place(
+                game.map.location(Coordinates(7, 7)),
+                EntityType::Resource(10),
+            )
             .unwrap();
 
         game.entities
-            .place(game.map.location(Coordinates(2, 2)), EntityType::Unit(&p1, Unit::Worker))
+            .place(
+                game.map.location(Coordinates(2, 2)),
+                EntityType::Unit(&p1, Unit::Worker),
+            )
             .unwrap();
         game.entities
-            .place(game.map.location(Coordinates(5, 5)), EntityType::Unit(&p2, Unit::Worker))
+            .place(
+                game.map.location(Coordinates(5, 5)),
+                EntityType::Unit(&p2, Unit::Worker),
+            )
             .unwrap();
 
         let mut p1_ai = p1.new_ai::<IdleAI>();
@@ -46,8 +58,14 @@ fn main() {
 
             {
                 // Tag owner of desires
-                let p1_desires = p1_ai.update(&mut p1_state, game.view_for(&p1)).into_iter().map(|d| Owned(&p1, d));
-                let mut p2_desires = p2_ai.update(&mut p2_state, game.view_for(&p2)).into_iter().map(|d| Owned(&p2, d));
+                let p1_desires = p1_ai
+                    .update(&mut p1_state, game.view_for(&p1))
+                    .into_iter()
+                    .map(|d| Owned(&p1, d));
+                let mut p2_desires = p2_ai
+                    .update(&mut p2_state, game.view_for(&p2))
+                    .into_iter()
+                    .map(|d| Owned(&p2, d));
 
                 // Interlave together
                 // TODO: use itertools interleave()

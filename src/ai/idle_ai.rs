@@ -8,7 +8,7 @@ impl AI for IdleAI {
     fn update<'p: 'g, 's: 'g, 'm: 'g, 'g>(
         &mut self,
         sate: &'s mut Self::PersistentState,
-        view: GameView<'p, 'm, 'g>
+        view: GameView<'p, 'm, 'g>,
     ) -> Vec<Desire> {
         // no desires!
         Vec::new()
