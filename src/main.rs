@@ -1,9 +1,10 @@
 extern crate itertools;
+extern crate ansi_term;
 
 mod game;
 mod ai;
 
-use game::{Player, AI, Owned, Game, EntityType, Unit, Map, Tile, Coordinates};
+use game::{Player, Colour, AI, Owned, Game, EntityType, Unit, Building, Resources, Map, Tile, Coordinates};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
 
@@ -18,8 +19,8 @@ fn main() {
     *map.get_mut_tile(Coordinates(5, 2)).unwrap() = Tile::Wall;
     let map = map;
 
-    let p1 = Player::new("Mario");
-    let p2 = Player::new("Luigi");
+    let p1 = Player::new("Mario", Colour::Red);
+    let p2 = Player::new("Luigi", Colour::Green);
 
     // not sure about state design
     let mut p1_state = p1.new_state::<IdleAI>();
@@ -38,6 +39,19 @@ fn main() {
             .place(
                 game.map.location(Coordinates(7, 7)),
                 EntityType::Resource(10),
+            )
+            .unwrap();
+
+        game.entities
+            .place(
+                game.map.location(Coordinates(2, 1)),
+                EntityType::Building(&p1, Building::Base(Resources(10))),
+            )
+            .unwrap();
+        game.entities
+            .place(
+                game.map.location(Coordinates(5, 6)),
+                EntityType::Building(&p2, Building::Base(Resources(10))),
             )
             .unwrap();
 

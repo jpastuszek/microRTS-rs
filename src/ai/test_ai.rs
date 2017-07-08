@@ -1,3 +1,5 @@
+use std::ptr;
+
 use game::{AI, EmptyPersistentState, GameView, Desire, Entity, EntityType, Unit, Location,
            Direction, Tile};
 
@@ -18,7 +20,7 @@ impl AI for TestAI {
                 // Desires cannot hold references to anything
                 // inside Game or we can't modify it later on
                 &Entity(_, Location(ref coordinates, _), EntityType::Unit(owner, Unit::Worker))
-                    if owner == view.player => {
+                    if ptr::eq(owner, view.player) => {
                     if let Location(_pos, &Tile::Plain) =
                         view.game.map.location(
                             coordinates.in_direction(Direction::Right),

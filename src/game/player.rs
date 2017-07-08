@@ -1,13 +1,19 @@
+pub use ansi_term::Colour;
+
 use game::{GameView, Desire};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Player {
     pub name: String,
+    pub colour: Colour
 }
 
 impl Player {
-    pub fn new<N: Into<String>>(name: N) -> Player {
-        Player { name: name.into() }
+    pub fn new<N: Into<String>>(name: N, colour: Colour) -> Player {
+        Player {
+            name: name.into(),
+            colour: colour
+        }
     }
 
     // called per game round

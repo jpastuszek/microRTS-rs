@@ -4,12 +4,11 @@ mod player;
 
 use std::fmt::Display;
 use std::fmt;
+use std::ptr;
 use itertools::Itertools;
 
 pub use self::map::{Map, Direction, Coordinates, Location, Tile};
-pub use self::entity::{Entity, EntityType, Unit, Building, Entities, EntityID};
-pub use self::player::{Player, AI, EmptyPersistentState, Owned};
-
+pub use self::entity::{Entity, EntityType, Unit, Building, Resources, Entities, EntityID}; pub use self::player::{Player, Colour, AI, EmptyPersistentState, Owned};
 #[derive(Debug)]
 pub struct Game<'p, 'm> {
     name: String,
@@ -51,7 +50,7 @@ impl<'p, 'm> Game<'p, 'm> {
     ) -> Result<Location<'m>, GameRuleViolation<'p, 'm, 'e>> {
         let &Entity(_id, Location(ref coordinates, _), ref entity_type) = entity;
         match entity_type {
-            &EntityType::Unit(owner, _) if owner == player => {
+            &EntityType::Unit(owner, _) if ptr::eq(owner, player) => {
                 let new_location = self.map.location(coordinates.in_direction(direction));
                 match new_location.1 {
                     &Tile::Plain => Ok(new_location),
@@ -98,7 +97,13 @@ const GRID_HOR_LINE: &'static str = "---";
 const GRID_VERT_LINE: &'static str = "|";
 const GRID_EMPTY: &'static str = "   ";
 const GRID_WALL: &'static str = "XXX";
+
 const ENTITY_WORKER: &'static str = "W";
+const ENTITY_LIGHT: &'static str = "L";
+const ENTITY_HEAVY: &'static str = "H";
+const ENTITY_BASE: &'static str = "@";
+const ENTITY_BARRACS: &'static str = "B";
+const ENTITY_RESOURCES: &'static str = "#";
 
 impl<'p, 'm> Display for Game<'p, 'm> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
@@ -106,9 +111,13 @@ impl<'p, 'm> Display for Game<'p, 'm> {
             writeln!(f, "{}", [GRID_INTERSECTION].iter().cycle().take(cels + 1).join(GRID_HOR_LINE))
         }
 
+        fn write_owned_entity(f: &mut fmt::Formatter, player: &Player, id: EntityID, symbol: &'static str) -> Result<(), fmt::Error> {
+            write!(f, "{}", player.colour.paint(format!("{}{:02}", symbol, id.0)))
+        }
+
+
         write_grid_row_line(f, self.map.width())?;
         for row in self.map.rows() {
-            //writeln!(f, "{}", [GRID_VERT_LINE].iter().cycle().take(self.map.width() + 1).join(GRID_EMPTY))?;
             for location in row {
                 write!(f, "{}", GRID_VERT_LINE)?;
                 match location {
@@ -117,9 +126,17 @@ impl<'p, 'm> Display for Game<'p, 'm> {
                     Location(_, &Tile::Plain) => {
                         //TODO: merge join entities (ordered by coord, next() for peek().coord ==
                         // tile.coord
-                        if let Some(&Entity(id, _, ref _entity_type)) = self.entities.get_by_location(&location) {
-                            // TODO: render different types
-                            write!(f, "{}{:02}", ENTITY_WORKER, id.0)?
+                        if let Some(&Entity(id, _, ref entity_type)) = self.entities.get_by_location(&location) {
+                            match *entity_type {
+                                EntityType::Unit(ref player, Unit::Worker) => write_owned_entity(f, player, id, ENTITY_WORKER)?,
+                                EntityType::Unit(ref player, Unit::Light) => write_owned_entity(f, player, id, ENTITY_LIGHT)?,
+
+                                EntityType::Unit(ref player, Unit::Heavy) => write_owned_entity(f, player, id, ENTITY_HEAVY)?,
+
+                                EntityType::Building(ref player, Building::Base(Resources(res))) => write!(f, "{}", player.colour.paint(format!("{}{:02}", ENTITY_BASE, res)))?,
+                                EntityType::Building(ref player, Building::Barracks) => write_owned_entity(f, player, id, ENTITY_BARRACS)?,
+                                EntityType::Resource(res) => write!(f, "{}{:2}", ENTITY_RESOURCES, res)?,
+                            }
                         } else {
                             write!(f, "{}", GRID_EMPTY)?
                         }
