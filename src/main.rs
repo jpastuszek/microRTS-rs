@@ -1,7 +1,9 @@
+extern crate itertools;
+
 mod game;
 mod ai;
 
-use game::{Player, AI, Owned, Game, EntityType, Unit, Map, Coordinates};
+use game::{Player, AI, Owned, Game, EntityType, Unit, Map, Tile, Coordinates};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
 
@@ -11,7 +13,10 @@ fn main() {
     let rounds = 1;
     let cycles = 4;
 
-    let map = Map::new(8, 8);
+    let mut map = Map::new(8, 8);
+    *map.get_mut_tile(Coordinates(2, 5)).unwrap() = Tile::Wall;
+    *map.get_mut_tile(Coordinates(5, 2)).unwrap() = Tile::Wall;
+    let map = map;
 
     let p1 = Player::new("Mario");
     let p2 = Player::new("Luigi");
@@ -88,7 +93,7 @@ fn main() {
 
             game.apply(desires.into_iter());
             //println!("{:?}", game.entities.get_by_entity_id(&EntityID(3)));
-            println!("{:?}", game);
+            println!("{}", game);
         }
     }
 }

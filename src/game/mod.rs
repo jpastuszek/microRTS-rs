@@ -2,6 +2,10 @@ mod map;
 mod entity;
 mod player;
 
+use std::fmt::Display;
+use std::fmt;
+use itertools::Itertools;
+
 pub use self::map::{Map, Direction, Coordinates, Location, Tile};
 pub use self::entity::{Entity, EntityType, Unit, Building, Entities, EntityID};
 pub use self::player::{Player, AI, EmptyPersistentState, Owned};
@@ -86,6 +90,47 @@ impl<'p, 'm> Game<'p, 'm> {
                 }
             }
         }
+    }
+}
+
+const GRID_INTERSECTION: &'static str = "+";
+const GRID_HOR_LINE: &'static str = "---";
+const GRID_VERT_LINE: &'static str = "|";
+const GRID_EMPTY: &'static str = "   ";
+const GRID_WALL: &'static str = "XXX";
+const ENTITY_WORKER: &'static str = " W ";
+
+impl<'p, 'm> Display for Game<'p, 'm> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        fn write_grid_row_line(f: &mut fmt::Formatter, cels: usize) -> Result<(), fmt::Error> {
+            writeln!(f, "{}", [GRID_INTERSECTION].iter().cycle().take(cels + 1).join(GRID_HOR_LINE))
+        }
+
+        write_grid_row_line(f, self.map.width())?;
+        for row in self.map.rows() {
+            //writeln!(f, "{}", [GRID_VERT_LINE].iter().cycle().take(self.map.width() + 1).join(GRID_EMPTY))?;
+            for location in row {
+                write!(f, "{}", GRID_VERT_LINE)?;
+                match location {
+                    Location(_, &Tile::Void) => write!(f, "{}", GRID_EMPTY)?,
+                    Location(_, &Tile::Wall) => write!(f, "{}", GRID_WALL)?,
+                    Location(_, &Tile::Plain) => {
+                        //TODO: merge join entities (ordered by coord, next() for peek().coord ==
+                        // tile.coord
+                        if let Some(entity) = self.entities.get_by_location(&location) {
+                            // TODO: render different types
+                            write!(f, "{}", ENTITY_WORKER)?
+                        } else {
+                            write!(f, "{}", GRID_EMPTY)?
+                        }
+                    }
+                }
+            }
+            writeln!(f, "{}", GRID_VERT_LINE)?;
+            write_grid_row_line(f, self.map.width())?;
+        }
+
+        Ok(())
     }
 }
 
