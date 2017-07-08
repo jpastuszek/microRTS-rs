@@ -54,12 +54,13 @@ fn main() {
             )
             .unwrap();
 
+        println!("{}", game);
+
         let mut p1_ai = p1.new_ai::<IdleAI>();
         let mut p2_ai = p2.new_ai::<TestAI>();
 
         for cycle in 0..cycles {
             let mut desires = Vec::new();
-
 
             {
                 // Tag owner of desires
