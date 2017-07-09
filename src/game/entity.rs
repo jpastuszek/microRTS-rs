@@ -65,7 +65,7 @@ impl<'p, 'm> Entities<'p, 'm> {
         entity: EntityType<'p>,
     ) -> Result<Option<Entity<'m, 'p>>, EntitiesError> {
         match location {
-            location @ Location(_, &Tile::Plain) => Ok({
+            location @ Location(_, &Tile::Empty) => Ok({
                 let entity_id = EntityID(self.entity_id_seq.next().expect("out of IDs"));
 
                 if let Some(entity_id) = self.location_index.get(&location) {

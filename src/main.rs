@@ -32,39 +32,39 @@ fn main() {
 
         game.entities
             .place(
-                game.map.location(Coordinates(0, 0)),
+                game.map.location(Coordinates(0, 0)).unwrap(),
                 EntityType::Resource(10),
             )
             .unwrap();
         game.entities
             .place(
-                game.map.location(Coordinates(7, 7)),
+                game.map.location(Coordinates(7, 7)).unwrap(),
                 EntityType::Resource(10),
             )
             .unwrap();
 
         game.entities
             .place(
-                game.map.location(Coordinates(2, 1)),
+                game.map.location(Coordinates(2, 1)).unwrap(),
                 EntityType::Building(&p1, Building::Base(Resources(10))),
             )
             .unwrap();
         game.entities
             .place(
-                game.map.location(Coordinates(5, 6)),
+                game.map.location(Coordinates(5, 6)).unwrap(),
                 EntityType::Building(&p2, Building::Base(Resources(10))),
             )
             .unwrap();
 
         game.entities
             .place(
-                game.map.location(Coordinates(2, 2)),
+                game.map.location(Coordinates(2, 2)).unwrap(),
                 EntityType::Unit(&p1, Unit::Worker),
             )
             .unwrap();
         game.entities
             .place(
-                game.map.location(Coordinates(5, 5)),
+                game.map.location(Coordinates(5, 5)).unwrap(),
                 EntityType::Unit(&p2, Unit::Worker),
             )
             .unwrap();

@@ -22,7 +22,7 @@ pub struct Game<'p, 'm> {
 #[derive(Debug)]
 pub enum GameRuleViolation<'p: 'e, 'm: 'e, 'e> {
     BadEntityPlacement,
-    BadMoveLocation(&'e Entity<'m, 'p>, Location<'m>),
+    InvalidMove(&'e Entity<'m, 'p>, &'e Location<'m>, Direction),
     NotOwnedEntity(&'e Entity<'m, 'p>, &'p Player),
 }
 
@@ -49,13 +49,14 @@ impl<'p, 'm> Game<'p, 'm> {
         entity: &'e Entity<'m, 'p>,
         direction: Direction,
     ) -> Result<Location<'m>, GameRuleViolation<'p, 'm, 'e>> {
-        let &Entity(_id, Location(ref coordinates, _), ref entity_type) = entity;
+        let &Entity(_id, ref current_location, ref entity_type) = entity;
+        let &Location(ref coordinates, _) = current_location;
+
         match entity_type {
             &EntityType::Unit(owner, _) if ptr::eq(owner, player) => {
-                let new_location = self.map.location(coordinates.in_direction(direction));
-                match new_location.1 {
-                    &Tile::Plain => Ok(new_location),
-                    _ => Err(GameRuleViolation::BadMoveLocation(entity, new_location)),
+                match self.map.location(coordinates.in_direction(direction)) {
+                    Some(new_location @ Location(_, &Tile::Empty)) => Ok(new_location),
+                    _ => Err(GameRuleViolation::InvalidMove(entity, current_location, direction)),
                 }
             }
             _ => Err(GameRuleViolation::NotOwnedEntity(entity, player)),
@@ -137,9 +138,8 @@ impl<'p, 'm> Display for Game<'p, 'm> {
             for location in row {
                 write!(f, "{}", GRID_VERT_LINE)?;
                 match location {
-                    Location(_, &Tile::Void) => write!(f, "{}", GRID_EMPTY)?,
                     Location(_, &Tile::Wall) => write!(f, "{}", GRID_WALL)?,
-                    Location(_, &Tile::Plain) => {
+                    Location(_, &Tile::Empty) => {
                         //TODO: merge join entities (ordered by coord, next() for peek().coord ==
                         // tile.coord
                         if let Some(&Entity(id, _, ref entity_type)) =

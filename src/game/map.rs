@@ -2,7 +2,7 @@ use std::slice::Iter as SliceIter;
 use std::iter::Map as MapIter;
 use std::iter::Enumerate;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Coordinates(pub usize, pub usize);
 
 impl Coordinates {
@@ -16,7 +16,7 @@ impl Coordinates {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Direction {
     Up,
     Down,
@@ -24,22 +24,20 @@ pub enum Direction {
     Right,
 }
 
+// TODO: both Coordinates and Tile pointer values are key here... hmm
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
+pub struct Location<'m>(pub Coordinates, pub &'m Tile);
+
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub enum Tile {
-    Void, // TODO: Option<Tile>
-    Plain, // TODO: Empty
+    Empty,
     Wall,
 }
 
 #[derive(Debug)]
 pub struct Map {
     tiles: Vec<Vec<Tile>>, // TODO: Matix
-    void: Tile,
 }
-
-// TODO: both Coordinates and Tile pointer values are key here... hmm
-#[derive(PartialEq, Eq, Hash, Debug, Clone)]
-pub struct Location<'m>(pub Coordinates, pub &'m Tile);
 
 type ESIter<'i, T> = Enumerate<SliceIter<'i, T>>;
 pub struct RowIter<'m>(MapIter<ESIter<'m, Vec<Tile>>, fn((usize, &'m Vec<Tile>)) -> Row<'m>>);
@@ -93,9 +91,8 @@ impl Map {
 
         Map {
             tiles: (0..height)
-                .map(|_row| (0..width).map(|_col| Tile::Plain).collect())
-                .collect(),
-            void: Tile::Void,
+                .map(|_row| (0..width).map(|_col| Tile::Empty).collect())
+                .collect()
         }
     }
 
@@ -123,11 +120,10 @@ impl Map {
         })
     }
 
-    pub fn location(&self, coordinates: Coordinates) -> Location {
-        let tile = self.tiles
+    pub fn location(&self, coordinates: Coordinates) -> Option<Location> {
+        self.tiles
             .get(coordinates.0)
             .and_then(|row| row.get(coordinates.1))
-            .unwrap_or(&self.void);
-        Location(coordinates, tile)
+            .map(|tile| Location(coordinates, tile))
     }
 }

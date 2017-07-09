@@ -21,7 +21,7 @@ impl AI for TestAI {
                 // inside Game or we can't modify it later on
                 &Entity(_, Location(ref coordinates, _), EntityType::Unit(owner, Unit::Worker))
                     if ptr::eq(owner, view.player) => {
-                    if let Location(_pos, &Tile::Plain) =
+                    if let Some(Location(_pos, &Tile::Empty)) =
                         view.game.map.location(
                             coordinates.in_direction(Direction::Right),
                         )
