@@ -22,9 +22,7 @@ impl AI for TestAI {
                 &Entity(_, Location(ref coordinates, _), EntityType::Unit(owner, Unit::Worker))
                     if ptr::eq(owner, view.player) => {
                     if let Some(Location(_pos, &Tile::Empty)) =
-                        view.game.map.location(
-                            coordinates.in_direction(Direction::Right),
-                        )
+                        coordinates.in_direction(Direction::Right).and_then(|coordinates| view.game.map.location(coordinates))
                     {
                         // just go right you entity!
                         actions.push(Desire::Move(*entity_id, Direction::Right));

@@ -54,7 +54,7 @@ impl<'p, 'm> Game<'p, 'm> {
 
         match entity_type {
             &EntityType::Unit(owner, _) if ptr::eq(owner, player) => {
-                match self.map.location(coordinates.in_direction(direction)) {
+                match coordinates.in_direction(direction).and_then(|coordinates| self.map.location(coordinates)) {
                     Some(new_location @ Location(_, &Tile::Empty)) => Ok(new_location),
                     _ => Err(GameRuleViolation::InvalidMove(entity, current_location, direction)),
                 }

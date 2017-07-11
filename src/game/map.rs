@@ -1,3 +1,5 @@
+use std::ptr;
+use std::hash::{Hash, Hasher};
 use std::slice::Iter as SliceIter;
 use std::iter::Map as MapIter;
 use std::iter::Enumerate;
@@ -6,22 +8,131 @@ use std::iter::Enumerate;
 pub struct Coordinates(pub usize, pub usize);
 
 impl Coordinates {
-    pub fn in_direction(&self, direction: Direction) -> Coordinates {
+    pub fn in_direction(&self, direction: Direction) -> Option<Coordinates> {
         match direction {
-            Direction::Up => Coordinates(self.0, self.1 - 1),
-            Direction::Down => Coordinates(self.0, self.1 + 1),
-            Direction::Left => Coordinates(self.0 - 1, self.1),
-            Direction::Right => Coordinates(self.0 + 1, self.1),
+            Direction::Up if self.1 > 0 => Some(Coordinates(self.0, self.1 - 1)),
+            Direction::Right if self.0 < usize::max_value() => Some(Coordinates(self.0 + 1, self.1)),
+            Direction::Down if self.1 < usize::max_value() => Some(Coordinates(self.0, self.1 + 1)),
+            Direction::Left if self.0 > 0 => Some(Coordinates(self.0 - 1, self.1)),
+            _ => None
         }
     }
+}
+
+#[test]
+fn in_direction_overflow() {
+    assert!(Coordinates(0, 0).in_direction(Direction::Up).is_none());
+    assert!(Coordinates(0, 0).in_direction(Direction::Left).is_none());
+    assert!(Coordinates(0, 0).in_direction(Direction::Down).is_some());
+    assert!(Coordinates(0, 0).in_direction(Direction::Right).is_some());
+
+    assert!(Coordinates(1, 1).in_direction(Direction::Up).is_some());
+    assert!(Coordinates(1, 1).in_direction(Direction::Left).is_some());
+    assert!(Coordinates(1, 1).in_direction(Direction::Down).is_some());
+    assert!(Coordinates(1, 1).in_direction(Direction::Right).is_some());
+
+    assert!(Coordinates(usize::max_value(), usize::max_value()).in_direction(Direction::Up).is_some());
+    assert!(Coordinates(usize::max_value(), usize::max_value()).in_direction(Direction::Left).is_some());
+    assert!(Coordinates(usize::max_value(), usize::max_value()).in_direction(Direction::Down).is_none());
+    assert!(Coordinates(usize::max_value(), usize::max_value()).in_direction(Direction::Right).is_none());
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Direction {
     Up,
+    Right,
     Down,
     Left,
-    Right,
+}
+
+impl Direction {
+    fn clockwise() -> DirectionClockwiseIter {
+        DirectionClockwiseIter {
+            direction: Some(Direction::Up)
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct DirectionClockwiseIter {
+    direction: Option<Direction>
+}
+
+impl Iterator for DirectionClockwiseIter {
+    type Item = Direction;
+
+    fn next(&mut self) -> Option<Direction> {
+        let next_direction = match self.direction {
+            Some(Direction::Up) => Some(Direction::Right),
+            Some(Direction::Right) => Some(Direction::Down),
+            Some(Direction::Down) => Some(Direction::Left),
+            Some(Direction::Left) => None,
+            None => None,
+        };
+        let ret = self.direction;
+        self.direction = next_direction;
+        ret
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Location2<'m> {
+    map: &'m Map,
+    coordinates: Coordinates,
+    tile: &'m Tile,
+}
+
+impl<'m> PartialEq for Location2<'m> {
+    fn eq(&self, other: &Location2<'m>) -> bool {
+        ptr::eq(self.tile, other.tile)
+    }
+}
+
+impl<'m> Eq for Location2<'m> { }
+
+impl<'m> Hash for Location2<'m> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_usize((self.tile as *const Tile) as usize)
+    }
+}
+
+impl<'m> Location2<'m> {
+    pub fn neighbours<'l>(&'l self) -> NeighboursIter<'m, 'l> {
+        NeighboursIter {
+            location: self,
+            directions: Direction::clockwise()
+        }
+    }
+}
+
+pub struct NeighboursIter<'m: 'l, 'l> {
+    location: &'l Location2<'m>,
+    directions: DirectionClockwiseIter,
+}
+
+impl<'m: 'l, 'l> Iterator for NeighboursIter<'m, 'l> {
+    type Item = (Direction, Location2<'m>);
+
+    fn next(&mut self) -> Option<(Direction, Location2<'m>)> {
+        while let Some(direction) = self.directions.next() {
+            if let ret @ Some(_) = self.location.coordinates.in_direction(direction)
+                .and_then(|neighbour_coordinates| self.location.map.location2(neighbour_coordinates))
+                .map(|location| (direction, location)) {
+                return ret
+            }
+        }
+        None
+    }
+}
+
+#[test]
+fn location_neighbours() {
+    let map = Map::new(8, 8);
+
+    assert_eq!(map.location2(Coordinates(0, 0)).unwrap().neighbours().collect::<Vec<_>>(), vec![
+               (Direction::Right, map.location2(Coordinates(1, 0)).unwrap()),
+               (Direction::Down, map.location2(Coordinates(0, 1)).unwrap())
+    ])
 }
 
 // TODO: both Coordinates and Tile pointer values are key here... hmm
@@ -126,4 +237,20 @@ impl Map {
             .and_then(|row| row.get(coordinates.1))
             .map(|tile| Location(coordinates, tile))
     }
+
+    pub fn location2(&self, coordinates: Coordinates) -> Option<Location2> {
+        self.tiles
+            .get(coordinates.0)
+            .and_then(|row| row.get(coordinates.1))
+            .map(|tile| Location2 {
+                map: &self,
+                coordinates: coordinates,
+                tile: tile
+            })
+    }
+}
+
+#[test]
+fn test_direction_iter() {
+    assert_eq!(Direction::clockwise().collect::<Vec<_>>(), vec![Direction::Up, Direction::Right, Direction::Down, Direction::Left])
 }
