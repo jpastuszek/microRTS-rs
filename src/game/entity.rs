@@ -3,7 +3,7 @@ use std::ops::RangeFrom;
 use std::collections::hash_map::Iter as HashMapIter;
 
 use game::player::Player;
-use game::map::{Location};
+use game::map::Location;
 
 #[derive(Debug)]
 pub enum Unit {
@@ -65,7 +65,7 @@ impl<'p, 'm> Entities<'p, 'm> {
         entity: EntityType<'p>,
     ) -> Result<EntityID, EntitiesError> {
         if !location.can_move_in() {
-            return Err(EntitiesError::InvalidPlacementLocation(location))
+            return Err(EntitiesError::InvalidPlacementLocation(location));
         }
 
         if let Some(entity_id) = self.location_index.get(&location) {

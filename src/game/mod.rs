@@ -55,10 +55,14 @@ impl<'p, 'm> Game<'p, 'm> {
             &EntityType::Unit(owner, _) if ptr::eq(owner, player) => {
                 if let Some(new_location) = current_location.in_direction(direction) {
                     if new_location.can_move_in() {
-                        return Ok(new_location)
+                        return Ok(new_location);
                     }
                 }
-                Err(GameRuleViolation::InvalidMove(entity, current_location, direction))
+                Err(GameRuleViolation::InvalidMove(
+                    entity,
+                    current_location,
+                    direction,
+                ))
             }
             _ => Err(GameRuleViolation::NotOwnedEntity(entity, player)),
         }

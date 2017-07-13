@@ -5,7 +5,7 @@ use std::iter::Zip as ZipIter;
 use std::iter::Map as MapIter;
 use std::iter::Enumerate;
 use std::option::IntoIter as OptionIntoIter;
-use std::iter::Cycle as Cycle;
+use std::iter::Cycle;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Coordinates(pub usize, pub usize);
@@ -14,10 +14,12 @@ impl Coordinates {
     pub fn in_direction(&self, direction: Direction) -> Option<Coordinates> {
         match direction {
             Direction::Up if self.1 > 0 => Some(Coordinates(self.0, self.1 - 1)),
-            Direction::Right if self.0 < usize::max_value() => Some(Coordinates(self.0 + 1, self.1)),
+            Direction::Right if self.0 < usize::max_value() => Some(
+                Coordinates(self.0 + 1, self.1),
+            ),
             Direction::Down if self.1 < usize::max_value() => Some(Coordinates(self.0, self.1 + 1)),
             Direction::Left if self.0 > 0 => Some(Coordinates(self.0 - 1, self.1)),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -34,10 +36,26 @@ fn in_direction_overflow() {
     assert!(Coordinates(1, 1).in_direction(Direction::Down).is_some());
     assert!(Coordinates(1, 1).in_direction(Direction::Right).is_some());
 
-    assert!(Coordinates(usize::max_value(), usize::max_value()).in_direction(Direction::Up).is_some());
-    assert!(Coordinates(usize::max_value(), usize::max_value()).in_direction(Direction::Left).is_some());
-    assert!(Coordinates(usize::max_value(), usize::max_value()).in_direction(Direction::Down).is_none());
-    assert!(Coordinates(usize::max_value(), usize::max_value()).in_direction(Direction::Right).is_none());
+    assert!(
+        Coordinates(usize::max_value(), usize::max_value())
+            .in_direction(Direction::Up)
+            .is_some()
+    );
+    assert!(
+        Coordinates(usize::max_value(), usize::max_value())
+            .in_direction(Direction::Left)
+            .is_some()
+    );
+    assert!(
+        Coordinates(usize::max_value(), usize::max_value())
+            .in_direction(Direction::Down)
+            .is_none()
+    );
+    assert!(
+        Coordinates(usize::max_value(), usize::max_value())
+            .in_direction(Direction::Right)
+            .is_none()
+    );
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -50,15 +68,13 @@ pub enum Direction {
 
 impl Direction {
     fn clockwise() -> DirectionClockwiseIter {
-        DirectionClockwiseIter {
-            direction: Some(Direction::Up)
-        }
+        DirectionClockwiseIter { direction: Some(Direction::Up) }
     }
 }
 
 #[derive(Debug)]
 pub struct DirectionClockwiseIter {
-    direction: Option<Direction>
+    direction: Option<Direction>,
 }
 
 impl Iterator for DirectionClockwiseIter {
@@ -91,7 +107,7 @@ impl<'m> PartialEq for Location<'m> {
     }
 }
 
-impl<'m> Eq for Location<'m> { }
+impl<'m> Eq for Location<'m> {}
 
 impl<'m> Hash for Location<'m> {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -103,18 +119,22 @@ impl<'m> Location<'m> {
     pub fn neighbours<'l>(&'l self) -> NeighboursIter<'m, 'l> {
         NeighboursIter {
             location: self,
-            directions: Direction::clockwise()
+            directions: Direction::clockwise(),
         }
     }
 
     pub fn in_direction(&self, direction: Direction) -> Option<Location<'m>> {
-        self.coordinates.in_direction(direction).and_then(|coordinates| self.map.location(coordinates))
+        self.coordinates.in_direction(direction).and_then(
+            |coordinates| {
+                self.map.location(coordinates)
+            },
+        )
     }
 
     pub fn can_move_in(&self) -> bool {
         match *self.tile {
             Tile::Empty => true,
-            _ => false
+            _ => false,
         }
     }
 }
@@ -129,9 +149,11 @@ impl<'m: 'l, 'l> Iterator for NeighboursIter<'m, 'l> {
 
     fn next(&mut self) -> Option<(Direction, Location<'m>)> {
         while let Some(direction) = self.directions.next() {
-            if let ret @ Some(_) = self.location.in_direction(direction)
-                .map(|location| (direction, location)) {
-                return ret
+            if let ret @ Some(_) = self.location.in_direction(direction).map(|location| {
+                (direction, location)
+            })
+            {
+                return ret;
             }
         }
         None
@@ -142,10 +164,16 @@ impl<'m: 'l, 'l> Iterator for NeighboursIter<'m, 'l> {
 fn location_neighbours() {
     let map = Map::new(8, 8);
 
-    assert_eq!(map.location(Coordinates(0, 0)).unwrap().neighbours().collect::<Vec<_>>(), vec![
-               (Direction::Right, map.location(Coordinates(1, 0)).unwrap()),
-               (Direction::Down, map.location(Coordinates(0, 1)).unwrap())
-    ])
+    assert_eq!(
+        map.location(Coordinates(0, 0))
+            .unwrap()
+            .neighbours()
+            .collect::<Vec<_>>(),
+        vec![
+            (Direction::Right, map.location(Coordinates(1, 0)).unwrap()),
+            (Direction::Down, map.location(Coordinates(0, 1)).unwrap()),
+        ]
+    )
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -169,7 +197,7 @@ impl Map {
         Map {
             tiles: (0..height)
                 .map(|_row| (0..width).map(|_col| Tile::Empty).collect())
-                .collect()
+                .collect(),
         }
     }
 
@@ -191,10 +219,12 @@ impl Map {
         self.tiles
             .get(coordinates.1)
             .and_then(|row| row.get(coordinates.0))
-            .map(|tile| Location {
-                map: &self,
-                coordinates: coordinates,
-                tile: tile
+            .map(|tile| {
+                Location {
+                    map: &self,
+                    coordinates: coordinates,
+                    tile: tile,
+                }
             })
     }
 
@@ -231,7 +261,8 @@ impl<'m> IntoIterator for Row<'m> {
 }
 
 type ESIter<'i, T> = Enumerate<ZipIter<SliceIter<'i, T>, Cycle<OptionIntoIter<&'i Map>>>>;
-pub struct RowIter<'m>(MapIter<ESIter<'m, Vec<Tile>>, fn((usize, (&'m Vec<Tile>, &'m Map))) -> Row<'m>>);
+type ToRowFn<'m> = fn((usize, (&'m Vec<Tile>, &'m Map))) -> Row<'m>;
+pub struct RowIter<'m>(MapIter<ESIter<'m, Vec<Tile>>, ToRowFn<'m>>);
 
 impl<'m> Iterator for RowIter<'m> {
     type Item = Row<'m>;
@@ -254,7 +285,7 @@ impl<'m> Iterator for RowLocationsIter<'m> {
             Location {
                 map: map,
                 coordinates: Coordinates(col_no, self.row_no),
-                tile: tile
+                tile: tile,
             }
         })
     }
@@ -263,5 +294,13 @@ impl<'m> Iterator for RowLocationsIter<'m> {
 
 #[test]
 fn test_direction_iter() {
-    assert_eq!(Direction::clockwise().collect::<Vec<_>>(), vec![Direction::Up, Direction::Right, Direction::Down, Direction::Left])
+    assert_eq!(
+        Direction::clockwise().collect::<Vec<_>>(),
+        vec![
+            Direction::Up,
+            Direction::Right,
+            Direction::Down,
+            Direction::Left,
+        ]
+    )
 }

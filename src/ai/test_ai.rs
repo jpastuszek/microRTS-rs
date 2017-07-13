@@ -18,15 +18,16 @@ impl AI for TestAI {
             match entity {
                 // Desires cannot hold references to anything
                 // inside Game or we can't modify it later on
-                &Entity(_, ref location, EntityType::Unit(owner, Unit::Worker)) if ptr::eq(owner, view.player) => {
+                &Entity(_, ref location, EntityType::Unit(owner, Unit::Worker))
+                    if ptr::eq(owner, view.player) => {
                     match location.in_direction(Direction::Right) {
                         Some(ref location) if location.can_move_in() => {
                             // just go right you entity!
                             actions.push(Desire::Move(*entity_id, Direction::Right));
                         }
-                        _ => ()
+                        _ => (),
                     }
-                },
+                }
                 _ => (),
             }
         }
