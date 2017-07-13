@@ -3,7 +3,7 @@ use std::ops::RangeFrom;
 use std::collections::hash_map::Iter as HashMapIter;
 
 use game::player::Player;
-use game::map::{Location, Tile};
+use game::map::{Location};
 
 #[derive(Debug)]
 pub enum Unit {
@@ -63,23 +63,25 @@ impl<'p, 'm> Entities<'p, 'm> {
         &mut self,
         location: Location<'m>,
         entity: EntityType<'p>,
-    ) -> Result<Option<Entity<'m, 'p>>, EntitiesError> {
-        match location {
-            location @ Location(_, &Tile::Empty) => Ok({
-                let entity_id = EntityID(self.entity_id_seq.next().expect("out of IDs"));
-
-                if let Some(entity_id) = self.location_index.get(&location) {
-                    return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
-                }
-
-                self.location_index.insert(location.clone(), entity_id);
-                self.entities.insert(
-                    entity_id,
-                    Entity(entity_id, location, entity),
-                )
-            }),
-            _ => Err(EntitiesError::InvalidPlacementLocation(location)),
+    ) -> Result<EntityID, EntitiesError> {
+        if !location.can_move_in() {
+            return Err(EntitiesError::InvalidPlacementLocation(location))
         }
+
+        if let Some(entity_id) = self.location_index.get(&location) {
+            return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
+        }
+
+        let entity_id = EntityID(self.entity_id_seq.next().expect("out of IDs"));
+        let entity = Entity(entity_id, location.clone(), entity);
+
+        if self.entities.insert(entity_id, entity).is_some() {
+            panic!("duplicate ID");
+        }
+
+        self.location_index.insert(location, entity_id);
+
+        Ok(entity_id)
     }
 
     pub fn get_by_entity_id<'e>(&'e self, entity_id: &EntityID) -> Option<&'e Entity<'m, 'p>> {

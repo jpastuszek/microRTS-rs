@@ -50,14 +50,15 @@ impl<'p, 'm> Game<'p, 'm> {
         direction: Direction,
     ) -> Result<Location<'m>, GameRuleViolation<'p, 'm, 'e>> {
         let &Entity(_id, ref current_location, ref entity_type) = entity;
-        let &Location(ref coordinates, _) = current_location;
 
         match entity_type {
             &EntityType::Unit(owner, _) if ptr::eq(owner, player) => {
-                match coordinates.in_direction(direction).and_then(|coordinates| self.map.location(coordinates)) {
-                    Some(new_location @ Location(_, &Tile::Empty)) => Ok(new_location),
-                    _ => Err(GameRuleViolation::InvalidMove(entity, current_location, direction)),
+                if let Some(new_location) = current_location.in_direction(direction) {
+                    if new_location.can_move_in() {
+                        return Ok(new_location)
+                    }
                 }
+                Err(GameRuleViolation::InvalidMove(entity, current_location, direction))
             }
             _ => Err(GameRuleViolation::NotOwnedEntity(entity, player)),
         }
@@ -94,6 +95,7 @@ impl<'p, 'm> Game<'p, 'm> {
     }
 }
 
+// TODO: move to GameView
 const GRID_INTERSECTION: &'static str = "+";
 const GRID_HOR_LINE: &'static str = "---";
 const GRID_VERT_LINE: &'static str = "|";
@@ -137,9 +139,9 @@ impl<'p, 'm> Display for Game<'p, 'm> {
         for row in self.map.rows() {
             for location in row {
                 write!(f, "{}", GRID_VERT_LINE)?;
-                match location {
-                    Location(_, &Tile::Wall) => write!(f, "{}", GRID_WALL)?,
-                    Location(_, &Tile::Empty) => {
+                match location.tile {
+                    &Tile::Wall => write!(f, "{}", GRID_WALL)?,
+                    &Tile::Empty => {
                         //TODO: merge join entities (ordered by coord, next() for peek().coord ==
                         // tile.coord
                         if let Some(&Entity(id, _, ref entity_type)) =
@@ -192,6 +194,8 @@ pub struct GameView<'p: 'g, 'm: 'g, 'g> {
     pub player: &'p Player,
 }
 // TODO: AI should only be able to call methods on GameView - make game private
+// TODO: GameView should build NavigationMap which includes Map tiles and Entities and can be
+// navigated with Navigators (like Location but over NavigaionMap and with path finding stuff)
 
 #[derive(Debug)]
 pub enum Desire {

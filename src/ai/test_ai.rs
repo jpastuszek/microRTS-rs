@@ -1,7 +1,6 @@
 use std::ptr;
 
-use game::{AI, EmptyPersistentState, GameView, Desire, Entity, EntityType, Unit, Location,
-           Direction, Tile};
+use game::{AI, EmptyPersistentState, GameView, Desire, Entity, EntityType, Unit, Direction};
 
 #[derive(Default)]
 pub struct TestAI;
@@ -19,15 +18,15 @@ impl AI for TestAI {
             match entity {
                 // Desires cannot hold references to anything
                 // inside Game or we can't modify it later on
-                &Entity(_, Location(ref coordinates, _), EntityType::Unit(owner, Unit::Worker))
-                    if ptr::eq(owner, view.player) => {
-                    if let Some(Location(_pos, &Tile::Empty)) =
-                        coordinates.in_direction(Direction::Right).and_then(|coordinates| view.game.map.location(coordinates))
-                    {
-                        // just go right you entity!
-                        actions.push(Desire::Move(*entity_id, Direction::Right));
+                &Entity(_, ref location, EntityType::Unit(owner, Unit::Worker)) if ptr::eq(owner, view.player) => {
+                    match location.in_direction(Direction::Right) {
+                        Some(ref location) if location.can_move_in() => {
+                            // just go right you entity!
+                            actions.push(Desire::Move(*entity_id, Direction::Right));
+                        }
+                        _ => ()
                     }
-                }
+                },
                 _ => (),
             }
         }
