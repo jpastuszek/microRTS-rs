@@ -4,6 +4,8 @@ extern crate ansi_term;
 mod game;
 mod ai;
 
+use itertools::interleave;
+
 use game::{Player, Colour, AI, Owned, Game, EntityType, Unit, Building, Resources, Map, Tile,
            Coordinates};
 use ai::idle_ai::IdleAI;
@@ -75,40 +77,21 @@ fn main() {
         let mut p2_ai = p2.new_ai::<TestAI>();
 
         for cycle in 0..cycles {
-            let mut desires = Vec::new();
+            println!();
+            println!("Cycle: {}", cycle);
 
-            {
-                // Tag owner of desires
-                let p1_desires = p1_ai
-                    .update(&mut p1_state, game.view_for(&p1))
-                    .into_iter()
-                    .map(|d| Owned(&p1, d));
-                let mut p2_desires = p2_ai
-                    .update(&mut p2_state, game.view_for(&p2))
-                    .into_iter()
-                    .map(|d| Owned(&p2, d));
+            // Tag owner of desires
+            let p1_desires = p1_ai
+                .update(&mut p1_state, game.view_for(&p1))
+                .into_iter()
+                .map(|d| Owned(&p1, d));
+            let p2_desires = p2_ai
+                .update(&mut p2_state, game.view_for(&p2))
+                .into_iter()
+                .map(|d| Owned(&p2, d));
 
-                // Interlave together
-                // TODO: use itertools interleave()
-                for p1_desire in p1_desires {
-                    desires.push(p1_desire);
-                    if let Some(p2_desire) = p2_desires.next() {
-                        desires.push(p2_desire)
-                    }
-                }
+            game.apply(interleave(p1_desires, p2_desires));
 
-                // remainign p2_actions
-                for p2_desire in p2_desires {
-                    desires.push(p2_desire);
-                }
-            }
-
-            for desire in &desires {
-                println!("[{}/{}] act: {:?}", cycle, round, desire);
-            }
-
-            game.apply(desires.into_iter());
-            //println!("{:?}", game.entities.get_by_entity_id(&EntityID(3)));
             println!("{}", game);
         }
     }

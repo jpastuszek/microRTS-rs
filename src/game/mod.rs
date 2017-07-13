@@ -112,7 +112,7 @@ const ENTITY_RESOURCES: &'static str = "#";
 impl<'p, 'm> Display for Game<'p, 'm> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         fn write_grid_row_line(f: &mut fmt::Formatter, cels: usize) -> Result<(), fmt::Error> {
-            writeln!(
+            write!(
                 f,
                 "{}",
                 [GRID_INTERSECTION].iter().cycle().take(cels + 1).join(
@@ -134,9 +134,9 @@ impl<'p, 'm> Display for Game<'p, 'm> {
             )
         }
 
-
         write_grid_row_line(f, self.map.width())?;
         for row in self.map.rows() {
+            writeln!(f)?;
             for location in row {
                 write!(f, "{}", GRID_VERT_LINE)?;
                 match location.tile {
