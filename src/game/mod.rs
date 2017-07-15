@@ -1,15 +1,20 @@
 mod map;
 mod entity;
 mod player;
+mod game_view;
 
 use std::fmt::Display;
 use std::fmt;
 use std::ptr;
 use itertools::Itertools;
 
-pub use self::map::{Map, Direction, Coordinates, Location, Tile};
-pub use self::entity::{Entity, EntityType, Unit, Building, Resources, Entities, EntityID};
-pub use self::player::{Player, Colour, AI, EmptyPersistentState, Owned};
+// Flat structure for AI
+// TODO: probably GameView should do this as it will be the main API for AI
+pub use game::map::{Map, Direction, Coordinates, Location, Tile};
+pub use game::entity::{Entity, EntityType, Unit, Building, Resources, Entities, EntityID};
+pub use game::player::{Player, Colour, AI, EmptyPersistentState, Owned};
+pub use game::game_view::GameView;
+
 #[derive(Debug)]
 pub struct Game<'p, 'm> {
     name: String,
@@ -99,7 +104,11 @@ impl<'p, 'm> Game<'p, 'm> {
     }
 }
 
-// TODO: move to GameView
+#[derive(Debug)]
+pub enum Desire {
+    Move(EntityID, Direction),
+}
+
 const GRID_INTERSECTION: &'static str = "+";
 const GRID_HOR_LINE: &'static str = "---";
 const GRID_VERT_LINE: &'static str = "|";
@@ -190,18 +199,4 @@ impl<'p, 'm> Display for Game<'p, 'm> {
 
         Ok(())
     }
-}
-
-#[derive(Debug)]
-pub struct GameView<'p: 'g, 'm: 'g, 'g> {
-    pub game: &'g Game<'p, 'm>,
-    pub player: &'p Player,
-}
-// TODO: AI should only be able to call methods on GameView - make game private
-// TODO: GameView should build NavigationMap which includes Map tiles and Entities and can be
-// navigated with Navigators (like Location but over NavigaionMap and with path finding stuff)
-
-#[derive(Debug)]
-pub enum Desire {
-    Move(EntityID, Direction),
 }
