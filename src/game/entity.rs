@@ -121,13 +121,13 @@ impl<'p, 'm> Entities<'p, 'm> {
         }
     }
 
-    pub fn iter<'e>(&'e self) -> EntitiesIter<'p, 'm, 'e> {
-        EntitiesIter { iter: self.entities.iter() }
+    pub fn iter<'e>(&'e self) -> Iter<'p, 'm, 'e> {
+        Iter { iter: self.entities.iter() }
     }
 }
 
 impl<'p: 'e, 'm: 'e, 'e> IntoIterator for &'e Entities<'p, 'm> {
-    type IntoIter = EntitiesIter<'p, 'm, 'e>;
+    type IntoIter = Iter<'p, 'm, 'e>;
     type Item = (&'e EntityID, &'e Entity<'m, 'p>);
 
     fn into_iter(self) -> Self::IntoIter {
@@ -135,11 +135,11 @@ impl<'p: 'e, 'm: 'e, 'e> IntoIterator for &'e Entities<'p, 'm> {
     }
 }
 
-pub struct EntitiesIter<'p: 'e, 'm: 'e, 'e> {
+pub struct Iter<'p: 'e, 'm: 'e, 'e> {
     iter: HashMapIter<'e, EntityID, Entity<'m, 'p>>,
 }
 
-impl<'p: 'e, 'm: 'e, 'e> Iterator for EntitiesIter<'p, 'm, 'e> {
+impl<'p: 'e, 'm: 'e, 'e> Iterator for Iter<'p, 'm, 'e> {
     type Item = (&'e EntityID, &'e Entity<'m, 'p>);
 
     fn next(&mut self) -> Option<(&'e EntityID, &'e Entity<'m, 'p>)> {

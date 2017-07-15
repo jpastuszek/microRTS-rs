@@ -1,6 +1,8 @@
-use game::{Game, Entities, Entity, EntitiesIter, Player, Map, Location, Direction};
+use game::{Game, Entities, Entity, EntityID, EntityType, Unit, EntitiesIter, Player, Map, Location, Direction};
+use std::ptr;
 
 //TODO: all pub exprots for AI should be here
+//TODO: shorten some lifetimes to 'g - we proably don't need all the details
 
 #[derive(Debug)]
 pub struct GameView<'p: 'g, 'm: 'g, 'g> {
@@ -34,11 +36,50 @@ impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
         }
     }
 
-    pub fn entities<'e>(&'e self) -> EntitiesIter<'p, 'm, 'e> {
+    pub fn entities(&self) -> EntitiesIter<'p, 'm, 'g> {
         self.game.entities.iter()
     }
 
-    // TODO: my_units that will filter by player
+    pub fn my_units<'v>(&'v self) -> MyUnits<'p, 'm, 'g, 'v> {
+        MyUnits {
+            game_view: self,
+            entities: self.entities()
+        }
+    }
+}
+
+pub struct MyUnit<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
+    pub entity_id: EntityID,
+    pub unit: &'g Unit,
+    pub navigator: Navigator<'p, 'm, 'g, 'v>
+}
+
+pub struct MyUnits<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
+    game_view: &'v GameView<'p, 'm, 'g>,
+    entities: EntitiesIter<'p, 'm, 'g>
+}
+
+impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnits<'p, 'm, 'g, 'v> {
+    type Item = MyUnit<'p, 'm, 'g, 'v>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some((entity_id, entity)) = self.entities.next() {
+            match entity {
+                &Entity(_, ref location, EntityType::Unit(owner, ref unit))
+                    //TODO: should that be impl Eq for Player?
+                    if ptr::eq(owner, self.game_view.player) => {
+                        Some(MyUnit {
+                            entity_id: *entity_id,
+                            unit: unit,
+                            navigator: self.game_view.navigator(location.clone())
+                        })
+                    }
+                _ => self.next()
+            }
+        } else {
+            None
+        }
+    }
 }
 
 pub struct Navigator<'p: 'm, 'm: 'g, 'g: 'v, 'v> {

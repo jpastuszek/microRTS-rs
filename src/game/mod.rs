@@ -10,7 +10,7 @@ use itertools::Itertools;
 // Flat structure for AI
 // TODO: probably GameView should do this as it will be the main API for AI
 pub use game::map::{Map, Direction, Coordinates, Location, Tile};
-pub use game::entity::{Entity, EntityType, EntitiesIter, Unit, Building, Resources, Entities, EntityID};
+pub use game::entity::{Entity, EntityType, Iter as EntitiesIter, Unit, Building, Resources, Entities, EntityID};
 pub use game::player::{Player, Colour, AI, EmptyPersistentState, Owned};
 use game_view::GameView;
 
