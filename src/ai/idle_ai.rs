@@ -1,4 +1,5 @@
-use game::{AI, EmptyPersistentState, GameView, Desire};
+use game::{AI, EmptyPersistentState, Desire};
+use game_view::GameView;
 
 #[derive(Default)]
 pub struct IdleAI;

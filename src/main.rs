@@ -2,6 +2,7 @@ extern crate itertools;
 extern crate ansi_term;
 
 mod game;
+mod game_view;
 mod ai;
 
 use itertools::interleave;

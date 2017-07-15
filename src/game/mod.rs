@@ -1,7 +1,6 @@
 mod map;
 mod entity;
 mod player;
-mod game_view;
 
 use std::fmt::Display;
 use std::fmt;
@@ -11,9 +10,9 @@ use itertools::Itertools;
 // Flat structure for AI
 // TODO: probably GameView should do this as it will be the main API for AI
 pub use game::map::{Map, Direction, Coordinates, Location, Tile};
-pub use game::entity::{Entity, EntityType, Unit, Building, Resources, Entities, EntityID};
+pub use game::entity::{Entity, EntityType, EntitiesIter, Unit, Building, Resources, Entities, EntityID};
 pub use game::player::{Player, Colour, AI, EmptyPersistentState, Owned};
-pub use game::game_view::GameView;
+use game_view::GameView;
 
 #[derive(Debug)]
 pub struct Game<'p, 'm> {

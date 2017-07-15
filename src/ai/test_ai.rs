@@ -1,6 +1,7 @@
 use std::ptr;
 
-use game::{AI, EmptyPersistentState, GameView, Desire, Entity, EntityType, Unit, Direction};
+use game::{AI, EmptyPersistentState, Desire, Entity, EntityType, Unit, Direction};
+use game_view::GameView;
 
 #[derive(Default)]
 pub struct TestAI;
@@ -14,7 +15,8 @@ impl AI for TestAI {
     ) -> Vec<Desire> {
         let mut actions = Vec::new();
 
-        for (entity_id, entity) in &view.game.entities {
+
+        for (entity_id, entity) in view.entities() {
             match entity {
                 // Desires cannot hold references to anything
                 // inside Game or we can't modify it later on

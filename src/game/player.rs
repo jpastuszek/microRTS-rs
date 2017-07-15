@@ -1,6 +1,7 @@
 pub use ansi_term::Colour;
 
-use game::{GameView, Desire};
+use game::Desire;
+use game_view::GameView;
 
 #[derive(Debug)]
 pub struct Player {
