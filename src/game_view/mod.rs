@@ -63,21 +63,23 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnits<'p, 'm, 'g, 'v> {
     type Item = MyUnit<'p, 'm, 'g, 'v>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some((entity_id, entity)) = self.entities.next() {
-            match entity {
-                &Entity(_, ref location, EntityType::Unit(owner, ref unit))
-                    //TODO: should that be impl Eq for Player?
-                    if ptr::eq(owner, self.game_view.player) => {
-                        Some(MyUnit {
-                            entity_id: *entity_id,
-                            unit: unit,
-                            navigator: self.game_view.navigator(location.clone())
-                        })
-                    }
-                _ => self.next()
+        loop {
+            if let Some((entity_id, entity)) = self.entities.next() {
+                match entity {
+                    &Entity(_, ref location, EntityType::Unit(owner, ref unit))
+                        //TODO: should that be impl Eq for Player?
+                        if ptr::eq(owner, self.game_view.player) => {
+                            return Some(MyUnit {
+                                entity_id: *entity_id,
+                                unit: unit,
+                                navigator: self.game_view.navigator(location.clone())
+                            })
+                        }
+                    _ => continue
+                }
+            } else {
+                return None
             }
-        } else {
-            None
         }
     }
 }
@@ -95,5 +97,9 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
                 self.game_view.navigator(location)
             },
         )
+    }
+
+    pub fn can_move_in(&self) -> bool {
+        self.entity.is_none() && self.location.can_move_in()
     }
 }

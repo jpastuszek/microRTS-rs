@@ -42,7 +42,7 @@ impl AI for TestAI {
                 &Unit::Worker => {
                     match unit.navigator.in_direction(Direction::Right) {
                         // TODO: check navigator.can_move_in()
-                        Some(ref navigator) if navigator.location.can_move_in() => {
+                        Some(ref navigator) if navigator.can_move_in() => {
                             // just go right you entity!
                             actions.push(Desire::Move(unit.entity_id, Direction::Right));
                         }
