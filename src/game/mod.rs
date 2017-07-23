@@ -62,13 +62,13 @@ impl<'p, 'm> Game<'p, 'm> {
         -> Result<(), GameRuleViolation<'p, 'm>> {
         // Check if player can move the entity in given direction
         let new_location =
-            if let Some(ref entity) = self.entities.get_by_entity_id(&entity_id) {
+            if let Some(ref entity) = self.entities.get_by_entity_id(entity_id) {
                 let current_location = match entity.object {
                     Object::Unit(owner, _) => {
                         if ! ptr::eq(owner, player) {
                             return Err(GameRuleViolation::EntityNotOwned(entity.id, player))
                         }
-                        entity.location.clone()
+                        entity.location
                     },
                     Object::Building(..) |
                     Object::Resource(..) => return Err(GameRuleViolation::InvalidMove(entity.id, direction, InvalidMove::Immovable))
@@ -82,7 +82,7 @@ impl<'p, 'm> Game<'p, 'm> {
                 return Err(GameRuleViolation::EntityDoesNotExist(entity_id))
             };
 
-        self.entities.set_location_by_entity_id(&entity_id, new_location).map_err(|err| match err {
+        self.entities.set_location_by_entity_id(entity_id, new_location).map_err(|err| match err {
             EntitiesError::NoEntity(_entity_id) => panic!("wat?"), //TODO: set_location should be on entity?
             EntitiesError::LocationNotWalkable(new_location) => GameRuleViolation::InvalidMove(entity_id, direction, InvalidMove::NotWalkable(new_location)),
             EntitiesError::LocationAlreadyTaken(new_location, by_entity_id) => GameRuleViolation::InvalidMove(entity_id, direction, InvalidMove::LocationAlreadyTaken(new_location, by_entity_id)),
@@ -157,7 +157,7 @@ impl<'p, 'm> Display for Game<'p, 'm> {
                     &Tile::Empty => {
                         //TODO: merge join entities (ordered by coord, next() for peek().coord ==
                         // tile.coord
-                        if let Some(ref entity) = self.entities.get_by_location(&location) {
+                        if let Some(ref entity) = self.entities.get_by_location(location) {
                             match entity.object {
                                 Object::Unit(ref player, Unit::Worker) => {
                                     write_owned_entity(f, player, entity.id, ENTITY_WORKER)?

@@ -79,7 +79,7 @@ impl<'p, 'm> Entities<'p, 'm> {
         let entity_id = EntityID(self.entity_id_seq.next().expect("out of IDs"));
         let entity = Entity {
             id: entity_id,
-            location: location.clone(),
+            location: location,
             object: object
         };
 
@@ -92,19 +92,19 @@ impl<'p, 'm> Entities<'p, 'm> {
         Ok(entity_id)
     }
 
-    pub fn get_by_entity_id<'e>(&'e self, entity_id: &EntityID) -> Option<&'e Entity<'m, 'p>> {
-        self.entities.get(entity_id)
+    pub fn get_by_entity_id<'e>(&'e self, entity_id: EntityID) -> Option<&'e Entity<'m, 'p>> {
+        self.entities.get(&entity_id)
     }
 
-    pub fn get_by_location<'e>(&'e self, location: &Location<'m>) -> Option<&'e Entity<'m, 'p>> {
+    pub fn get_by_location<'e>(&'e self, location: Location<'m>) -> Option<&'e Entity<'m, 'p>> {
         self.location_index.get(&location).and_then(|entity_id| {
-            self.get_by_entity_id(entity_id)
+            self.get_by_entity_id(*entity_id)
         })
     }
 
     pub fn set_location_by_entity_id(
         &mut self,
-        entity_id: &EntityID,
+        entity_id: EntityID,
         location: Location<'m>,
     ) -> Result<(), EntitiesError<'m>> {
         // Check if new location is valid for entity to be placed on
@@ -117,13 +117,13 @@ impl<'p, 'm> Entities<'p, 'm> {
         }
 
         match self.entities.get_mut(&entity_id) {
-            None => Err(EntitiesError::NoEntity(*entity_id)),
+            None => Err(EntitiesError::NoEntity(entity_id)),
             Some(&mut Entity { location: ref mut entity_location, .. }) => {
                 // Update indexes first
                 self.location_index.remove(&entity_location).expect(
                     "bad location_index",
                     );
-                self.location_index.insert(location.clone(), *entity_id);
+                self.location_index.insert(location, entity_id);
 
                 // Update entity
                 *entity_location = location;
@@ -140,7 +140,7 @@ impl<'p, 'm> Entities<'p, 'm> {
 
 impl<'p: 'e, 'm: 'e, 'e> IntoIterator for &'e Entities<'p, 'm> {
     type IntoIter = Iter<'p, 'm, 'e>;
-    type Item = (&'e EntityID, &'e Entity<'m, 'p>);
+    type Item = (EntityID, &'e Entity<'m, 'p>);
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
@@ -152,9 +152,9 @@ pub struct Iter<'p: 'e, 'm: 'e, 'e> {
 }
 
 impl<'p: 'e, 'm: 'e, 'e> Iterator for Iter<'p, 'm, 'e> {
-    type Item = (&'e EntityID, &'e Entity<'m, 'p>);
+    type Item = (EntityID, &'e Entity<'m, 'p>);
 
-    fn next(&mut self) -> Option<(&'e EntityID, &'e Entity<'m, 'p>)> {
-        self.iter.next()
+    fn next(&mut self) -> Option<(EntityID, &'e Entity<'m, 'p>)> {
+        self.iter.next().map(|(entity_id, entity)| (*entity_id, entity))
     }
 }

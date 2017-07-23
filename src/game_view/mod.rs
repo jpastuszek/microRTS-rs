@@ -28,7 +28,7 @@ impl<'p: 'm, 'm: 'e, 'e> NavigationMap<'p, 'm, 'e> {
 impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
     pub fn navigator<'v>(&'v self, location: Location<'m>) -> Navigator<'p, 'm, 'g, 'v> {
         // TODO: index entities in map like matrix for quick access
-        let entity = self.game.entities.get_by_location(&location);
+        let entity = self.game.entities.get_by_location(location);
         Navigator {
             game_view: self,
             location: location,
@@ -66,13 +66,13 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnits<'p, 'm, 'g, 'v> {
         loop {
             if let Some((entity_id, entity)) = self.entities.next() {
                 match entity {
-                    &Entity { ref location, object: Object::Unit(owner, ref unit), .. }
+                    &Entity { location, object: Object::Unit(owner, ref unit), .. }
                         //TODO: should that be impl Eq for Player?
                         if ptr::eq(owner, self.game_view.player) => {
                             return Some(MyUnit {
-                                entity_id: *entity_id,
+                                entity_id: entity_id,
                                 unit: unit,
-                                navigator: self.game_view.navigator(location.clone())
+                                navigator: self.game_view.navigator(location)
                             })
                         }
                     _ => continue

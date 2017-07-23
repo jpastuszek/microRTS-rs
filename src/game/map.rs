@@ -94,7 +94,7 @@ impl Iterator for DirectionClockwiseIter {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Location<'m> {
     map: &'m Map,
     pub coordinates: Coordinates,
