@@ -22,7 +22,7 @@ pub enum Building {
 }
 
 #[derive(Debug)]
-pub enum EntityType<'p> {
+pub enum Object<'p> {
     Unit(&'p Player, Unit),
     Building(&'p Player, Building),
     Resource(u64),
@@ -34,7 +34,11 @@ pub enum EntityType<'p> {
 pub struct EntityID(pub usize);
 
 #[derive(Debug)]
-pub struct Entity<'m, 'p>(pub EntityID, pub Location<'m>, pub EntityType<'p>);
+pub struct Entity<'m, 'p> {
+    pub id: EntityID,
+    pub location: Location<'m>,
+    pub object: Object<'p>,
+}
 
 #[derive(Debug)]
 pub struct Entities<'p, 'm> {
@@ -46,7 +50,7 @@ pub struct Entities<'p, 'm> {
 #[derive(Debug)]
 pub enum EntitiesError<'m> {
     NoEntity(EntityID),
-    InvalidPlacementLocation(Location<'m>),
+    LocationNotWalkable(Location<'m>),
     LocationAlreadyTaken(Location<'m>, EntityID),
 }
 
@@ -62,10 +66,10 @@ impl<'p, 'm> Entities<'p, 'm> {
     pub fn place(
         &mut self,
         location: Location<'m>,
-        entity: EntityType<'p>,
-    ) -> Result<EntityID, EntitiesError> {
-        if !location.can_move_in() {
-            return Err(EntitiesError::InvalidPlacementLocation(location));
+        object: Object<'p>,
+    ) -> Result<EntityID, EntitiesError<'m>> {
+        if !location.walkable() {
+            return Err(EntitiesError::LocationNotWalkable(location));
         }
 
         if let Some(entity_id) = self.location_index.get(&location) {
@@ -73,7 +77,11 @@ impl<'p, 'm> Entities<'p, 'm> {
         }
 
         let entity_id = EntityID(self.entity_id_seq.next().expect("out of IDs"));
-        let entity = Entity(entity_id, location.clone(), entity);
+        let entity = Entity {
+            id: entity_id,
+            location: location.clone(),
+            object: object
+        };
 
         if self.entities.insert(entity_id, entity).is_some() {
             panic!("duplicate ID");
@@ -94,30 +102,34 @@ impl<'p, 'm> Entities<'p, 'm> {
         })
     }
 
-    pub fn set_location_by_entity_id<'e>(
-        &'e mut self,
+    pub fn set_location_by_entity_id(
+        &mut self,
         entity_id: &EntityID,
         location: Location<'m>,
-    ) -> Result<(), EntitiesError> {
+    ) -> Result<(), EntitiesError<'m>> {
+        // Check if new location is valid for entity to be placed on
+        if !location.walkable() {
+            return Err(EntitiesError::LocationNotWalkable(location));
+        }
+
         if let Some(entity_id) = self.location_index.get(&location) {
             return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
         }
 
-        if let Some(&mut Entity(entity_id, ref mut entity_location, _)) =
-            self.entities.get_mut(&entity_id)
-        {
-            // Update indexes first
-            self.location_index.remove(&entity_location).expect(
-                "bad location_index",
-            );
-            self.location_index.insert(location.clone(), entity_id);
+        match self.entities.get_mut(&entity_id) {
+            None => Err(EntitiesError::NoEntity(*entity_id)),
+            Some(&mut Entity { location: ref mut entity_location, .. }) => {
+                // Update indexes first
+                self.location_index.remove(&entity_location).expect(
+                    "bad location_index",
+                    );
+                self.location_index.insert(location.clone(), *entity_id);
 
-            // Update entity
-            *entity_location = location;
+                // Update entity
+                *entity_location = location;
 
-            Ok(())
-        } else {
-            Err(EntitiesError::NoEntity(*entity_id))
+                Ok(())
+            }
         }
     }
 

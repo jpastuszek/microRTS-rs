@@ -131,7 +131,7 @@ impl<'m> Location<'m> {
         )
     }
 
-    pub fn can_move_in(&self) -> bool {
+    pub fn walkable(&self) -> bool {
         match *self.tile {
             Tile::Empty => true,
             _ => false,

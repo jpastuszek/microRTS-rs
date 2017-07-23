@@ -7,7 +7,7 @@ mod ai;
 
 use itertools::interleave;
 
-use game::{Player, Colour, AI, Owned, Game, EntityType, Unit, Building, Resources, Map, Tile,
+use game::{Player, Colour, AI, Owned, Game, Object, Unit, Building, Resources, Map, Tile,
            Coordinates};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
@@ -36,39 +36,39 @@ fn main() {
         game.entities
             .place(
                 game.map.location(Coordinates(0, 0)).unwrap(),
-                EntityType::Resource(10),
+                Object::Resource(10),
             )
             .unwrap();
         game.entities
             .place(
                 game.map.location(Coordinates(7, 7)).unwrap(),
-                EntityType::Resource(10),
+                Object::Resource(10),
             )
             .unwrap();
 
         game.entities
             .place(
                 game.map.location(Coordinates(2, 1)).unwrap(),
-                EntityType::Building(&p1, Building::Base(Resources(10))),
+                Object::Building(&p1, Building::Base(Resources(10))),
             )
             .unwrap();
         game.entities
             .place(
                 game.map.location(Coordinates(5, 6)).unwrap(),
-                EntityType::Building(&p2, Building::Base(Resources(10))),
+                Object::Building(&p2, Building::Base(Resources(10))),
             )
             .unwrap();
 
         game.entities
             .place(
                 game.map.location(Coordinates(2, 2)).unwrap(),
-                EntityType::Unit(&p1, Unit::Worker),
+                Object::Unit(&p1, Unit::Worker),
             )
             .unwrap();
         game.entities
             .place(
                 game.map.location(Coordinates(5, 5)).unwrap(),
-                EntityType::Unit(&p2, Unit::Worker),
+                Object::Unit(&p2, Unit::Worker),
             )
             .unwrap();
 

@@ -1,4 +1,4 @@
-use game::{Game, Entities, Entity, EntityID, EntityType, Unit, EntitiesIter, Player, Map, Location, Direction};
+use game::{Game, Entity, EntityID, Object, Unit, EntitiesIter, Player, Location, Direction};
 use std::ptr;
 
 //TODO: all pub exprots for AI should be here
@@ -66,7 +66,7 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnits<'p, 'm, 'g, 'v> {
         loop {
             if let Some((entity_id, entity)) = self.entities.next() {
                 match entity {
-                    &Entity(_, ref location, EntityType::Unit(owner, ref unit))
+                    &Entity { ref location, object: Object::Unit(owner, ref unit), .. }
                         //TODO: should that be impl Eq for Player?
                         if ptr::eq(owner, self.game_view.player) => {
                             return Some(MyUnit {
@@ -99,7 +99,7 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
         )
     }
 
-    pub fn can_move_in(&self) -> bool {
-        self.entity.is_none() && self.location.can_move_in()
+    pub fn walkable(&self) -> bool {
+        self.entity.is_none() && self.location.walkable()
     }
 }
