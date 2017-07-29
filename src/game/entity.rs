@@ -51,18 +51,16 @@ pub struct Entities<'p, 'm> {
 
 #[derive(Debug)]
 pub enum EntitiesError<'m> {
-    NoEntity(EntityID),
     LocationNotWalkable(Location<'m>),
     LocationAlreadyTaken(Location<'m>, EntityID),
 }
 
-// TODO: rename; entity_ref
-pub struct EntityMutRef<'p: 'e, 'm: 'e, 'e> {
+pub struct EntityMutator<'p: 'e, 'm: 'e, 'e> {
     pub entity: &'e mut Entity<'m, 'p>,
     location_index: &'e mut LocationIndex<'m>,
 }
 
-impl<'p: 'e, 'm: 'e, 'e> EntityMutRef<'p, 'm, 'e> {
+impl<'p: 'e, 'm: 'e, 'e> EntityMutator<'p, 'm, 'e> {
     pub fn set_location(&mut self, location: Location<'m>) -> Result<(), EntitiesError<'m>> {
         // Check if new location is valid for entity to be placed on
         if !location.walkable() {
@@ -78,7 +76,7 @@ impl<'p: 'e, 'm: 'e, 'e> EntityMutRef<'p, 'm, 'e> {
         // Update indexes first
         self.location_index.remove(&entity_location).expect(
             "bad location_index",
-            );
+        );
         self.location_index.insert(location, self.entity.id);
 
         // Update entity
@@ -114,7 +112,7 @@ impl<'p, 'm> Entities<'p, 'm> {
         let entity = Entity {
             id: entity_id,
             location: location,
-            object: object
+            object: object,
         };
 
         if self.entities.insert(entity_id, entity).is_some() {
@@ -126,23 +124,25 @@ impl<'p, 'm> Entities<'p, 'm> {
         Ok(entity_id)
     }
 
-    pub fn get_by_entity_id<'e>(&'e self, entity_id: EntityID) -> Option<&'e Entity<'m, 'p>> {
+    pub fn get<'e>(&'e self, entity_id: EntityID) -> Option<&'e Entity<'m, 'p>> {
         self.entities.get(&entity_id)
+    }
+
+    pub fn get_mutator<'e>(&'e mut self, entity_id: EntityID) -> Option<EntityMutator<'p, 'm, 'e>> {
+        let entities = &mut self.entities;
+        let location_index = &mut self.location_index;
+
+        entities.get_mut(&entity_id).map(move |e| {
+            EntityMutator {
+                entity: e,
+                location_index: location_index,
+            }
+        })
     }
 
     pub fn get_by_location<'e>(&'e self, location: Location<'m>) -> Option<&'e Entity<'m, 'p>> {
         self.location_index.get(&location).and_then(|entity_id| {
-            self.get_by_entity_id(*entity_id)
-        })
-    }
-
-    pub fn get_mut<'e>(&'e mut self, entity_id: EntityID) -> Option<EntityMutRef<'p, 'm, 'e>> {
-        let entities = &mut self.entities;
-        let location_index = &mut self.location_index;
-
-        entities.get_mut(&entity_id).map(move |e| EntityMutRef {
-            entity: e,
-            location_index: location_index,
+            self.get(*entity_id)
         })
     }
 
@@ -168,6 +168,8 @@ impl<'p: 'e, 'm: 'e, 'e> Iterator for Iter<'p, 'm, 'e> {
     type Item = (EntityID, &'e Entity<'m, 'p>);
 
     fn next(&mut self) -> Option<(EntityID, &'e Entity<'m, 'p>)> {
-        self.iter.next().map(|(entity_id, entity)| (*entity_id, entity))
+        self.iter.next().map(
+            |(entity_id, entity)| (*entity_id, entity),
+        )
     }
 }

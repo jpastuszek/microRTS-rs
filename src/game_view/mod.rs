@@ -32,7 +32,7 @@ impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
         Navigator {
             game_view: self,
             location: location,
-            entity: entity
+            entity: entity,
         }
     }
 
@@ -43,7 +43,7 @@ impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
     pub fn my_units<'v>(&'v self) -> MyUnits<'p, 'm, 'g, 'v> {
         MyUnits {
             game_view: self,
-            entities: self.entities()
+            entities: self.entities(),
         }
     }
 }
@@ -51,12 +51,12 @@ impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
 pub struct MyUnit<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
     pub entity_id: EntityID,
     pub unit: &'g Unit,
-    pub navigator: Navigator<'p, 'm, 'g, 'v>
+    pub navigator: Navigator<'p, 'm, 'g, 'v>,
 }
 
 pub struct MyUnits<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
     game_view: &'v GameView<'p, 'm, 'g>,
-    entities: EntitiesIter<'p, 'm, 'g>
+    entities: EntitiesIter<'p, 'm, 'g>,
 }
 
 impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnits<'p, 'm, 'g, 'v> {
@@ -78,7 +78,7 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnits<'p, 'm, 'g, 'v> {
                     _ => continue
                 }
             } else {
-                return None
+                return None;
             }
         }
     }
@@ -87,16 +87,14 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnits<'p, 'm, 'g, 'v> {
 pub struct Navigator<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
     game_view: &'v GameView<'p, 'm, 'g>,
     pub location: Location<'m>,
-    pub entity: Option<&'g Entity<'m, 'p>>
+    pub entity: Option<&'g Entity<'m, 'p>>,
 }
 
 impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
     pub fn in_direction(&self, direction: Direction) -> Option<Navigator<'p, 'm, 'g, 'v>> {
-        self.location.in_direction(direction).map(
-            |location| {
-                self.game_view.navigator(location)
-            },
-        )
+        self.location.in_direction(direction).map(|location| {
+            self.game_view.navigator(location)
+        })
     }
 
     pub fn walkable(&self) -> bool {
