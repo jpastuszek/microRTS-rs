@@ -58,35 +58,36 @@ impl<'p, 'm> Game<'p, 'm> {
         }
     }
 
+    //TODO: cleanup
     fn move_entity(&mut self, player: &'p Player, entity_id: EntityID, direction: Direction)
         -> Result<(), GameRuleViolation<'p, 'm>> {
         // Check if player can move the entity in given direction
-        let new_location =
-            if let Some(ref entity) = self.entities.get_by_entity_id(entity_id) {
-                let current_location = match entity.object {
-                    Object::Unit(owner, _) => {
-                        if ! ptr::eq(owner, player) {
-                            return Err(GameRuleViolation::EntityNotOwned(entity.id, player))
-                        }
-                        entity.location
-                    },
-                    Object::Building(..) |
-                    Object::Resource(..) => return Err(GameRuleViolation::InvalidMove(entity.id, direction, InvalidMove::Immovable))
-                };
-
-                match current_location.in_direction(direction) {
-                    None => return Err(GameRuleViolation::InvalidMove(entity.id, direction, InvalidMove::OutOfMap)),
-                    Some(new_location) => new_location
-                }
-            } else {
-                return Err(GameRuleViolation::EntityDoesNotExist(entity_id))
+        if let Some(ref mut entity_ref) = self.entities.get_mut(entity_id) {
+            let current_location = match entity_ref.entity.object {
+                Object::Unit(owner, _) => {
+                    if ! ptr::eq(owner, player) {
+                        return Err(GameRuleViolation::EntityNotOwned(entity_ref.entity.id, player))
+                    }
+                    entity_ref.entity.location
+                },
+                Object::Building(..) |
+                Object::Resource(..) => return Err(GameRuleViolation::InvalidMove(entity_ref.entity.id, direction, InvalidMove::Immovable))
             };
 
-        self.entities.set_location_by_entity_id(entity_id, new_location).map_err(|err| match err {
-            EntitiesError::NoEntity(_entity_id) => panic!("wat?"), //TODO: set_location should be on entity?
-            EntitiesError::LocationNotWalkable(new_location) => GameRuleViolation::InvalidMove(entity_id, direction, InvalidMove::NotWalkable(new_location)),
-            EntitiesError::LocationAlreadyTaken(new_location, by_entity_id) => GameRuleViolation::InvalidMove(entity_id, direction, InvalidMove::LocationAlreadyTaken(new_location, by_entity_id)),
-        })
+            let new_location = match current_location.in_direction(direction) {
+                None => return Err(GameRuleViolation::InvalidMove(entity_ref.entity.id, direction, InvalidMove::OutOfMap)),
+                Some(new_location) => new_location
+            };
+
+            entity_ref.set_location(new_location).map_err(|err| match err {
+                // TODO: no need for this error
+                EntitiesError::NoEntity(_entity_id) => unreachable!(),
+                EntitiesError::LocationNotWalkable(new_location) => GameRuleViolation::InvalidMove(entity_id, direction, InvalidMove::NotWalkable(new_location)),
+                EntitiesError::LocationAlreadyTaken(new_location, by_entity_id) => GameRuleViolation::InvalidMove(entity_id, direction, InvalidMove::LocationAlreadyTaken(new_location, by_entity_id)),
+            })
+        } else {
+            return Err(GameRuleViolation::EntityDoesNotExist(entity_id))
+        }
     }
 
     pub fn apply<A>(&mut self, desires: A)

@@ -40,11 +40,13 @@ pub struct Entity<'m, 'p> {
     pub object: Object<'p>,
 }
 
+type LocationIndex<'m> = HashMap<Location<'m>, EntityID>;
+
 #[derive(Debug)]
 pub struct Entities<'p, 'm> {
     entities: HashMap<EntityID, Entity<'m, 'p>>,
     entity_id_seq: RangeFrom<usize>,
-    location_index: HashMap<Location<'m>, EntityID>,
+    location_index: LocationIndex<'m>,
 }
 
 #[derive(Debug)]
@@ -52,6 +54,38 @@ pub enum EntitiesError<'m> {
     NoEntity(EntityID),
     LocationNotWalkable(Location<'m>),
     LocationAlreadyTaken(Location<'m>, EntityID),
+}
+
+// TODO: rename; entity_ref
+pub struct EntityMutRef<'p: 'e, 'm: 'e, 'e> {
+    pub entity: &'e mut Entity<'m, 'p>,
+    location_index: &'e mut LocationIndex<'m>,
+}
+
+impl<'p: 'e, 'm: 'e, 'e> EntityMutRef<'p, 'm, 'e> {
+    pub fn set_location(&mut self, location: Location<'m>) -> Result<(), EntitiesError<'m>> {
+        // Check if new location is valid for entity to be placed on
+        if !location.walkable() {
+            return Err(EntitiesError::LocationNotWalkable(location));
+        }
+
+        if let Some(entity_id) = self.location_index.get(&location) {
+            return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
+        }
+
+        let entity_location = &mut self.entity.location;
+
+        // Update indexes first
+        self.location_index.remove(&entity_location).expect(
+            "bad location_index",
+            );
+        self.location_index.insert(location, self.entity.id);
+
+        // Update entity
+        *entity_location = location;
+
+        Ok(())
+    }
 }
 
 impl<'p, 'm> Entities<'p, 'm> {
@@ -102,35 +136,14 @@ impl<'p, 'm> Entities<'p, 'm> {
         })
     }
 
-    pub fn set_location_by_entity_id(
-        &mut self,
-        entity_id: EntityID,
-        location: Location<'m>,
-    ) -> Result<(), EntitiesError<'m>> {
-        // Check if new location is valid for entity to be placed on
-        if !location.walkable() {
-            return Err(EntitiesError::LocationNotWalkable(location));
-        }
+    pub fn get_mut<'e>(&'e mut self, entity_id: EntityID) -> Option<EntityMutRef<'p, 'm, 'e>> {
+        let entities = &mut self.entities;
+        let location_index = &mut self.location_index;
 
-        if let Some(entity_id) = self.location_index.get(&location) {
-            return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
-        }
-
-        match self.entities.get_mut(&entity_id) {
-            None => Err(EntitiesError::NoEntity(entity_id)),
-            Some(&mut Entity { location: ref mut entity_location, .. }) => {
-                // Update indexes first
-                self.location_index.remove(&entity_location).expect(
-                    "bad location_index",
-                    );
-                self.location_index.insert(location, entity_id);
-
-                // Update entity
-                *entity_location = location;
-
-                Ok(())
-            }
-        }
+        entities.get_mut(&entity_id).map(move |e| EntityMutRef {
+            entity: e,
+            location_index: location_index,
+        })
     }
 
     pub fn iter<'e>(&'e self) -> Iter<'p, 'm, 'e> {
