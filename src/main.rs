@@ -7,7 +7,7 @@ mod ai;
 
 use itertools::interleave;
 
-use game::{Player, Colour, AI, Owned, Game, Object, Unit, Building, Resources, Map, Tile,
+use game::{Player, Colour, AI, Owned, GameBuilder, Object, Unit, Building, Resources, Map, Dimension, Tile,
            Coordinates};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
@@ -18,7 +18,7 @@ fn main() {
     let rounds = 1;
     let cycles = 4;
 
-    let mut map = Map::new(8, 8);
+    let mut map = Map::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap());
     *map.get_mut_tile(Coordinates(2, 5)).unwrap() = Tile::Wall;
     *map.get_mut_tile(Coordinates(5, 2)).unwrap() = Tile::Wall;
     let map = map;
@@ -30,47 +30,18 @@ fn main() {
     let mut p1_state = p1.new_state::<IdleAI>();
     let mut p2_state = p2.new_state::<TestAI>();
 
+    let mut game_builder = GameBuilder::new("foo", &map);
+
+    game_builder
+        .place(Coordinates(0, 0), Object::Resource(10)).unwrap()
+        .place(Coordinates(7, 7), Object::Resource(10)).unwrap()
+        .place(Coordinates(2, 1), Object::Building(&p1, Building::Base(Resources(10)))).unwrap()
+        .place(Coordinates(5, 6), Object::Building(&p2, Building::Base(Resources(10)))).unwrap()
+        .place(Coordinates(2, 2), Object::Unit(&p1, Unit::Worker)).unwrap()
+        .place(Coordinates(5, 5), Object::Unit(&p2, Unit::Worker)).unwrap();
+
     for round in 0..rounds {
-        let mut game = Game::new("foo", round, &map);
-
-        game.entities
-            .place(
-                game.map.location(Coordinates(0, 0)).unwrap(),
-                Object::Resource(10),
-            )
-            .unwrap();
-        game.entities
-            .place(
-                game.map.location(Coordinates(7, 7)).unwrap(),
-                Object::Resource(10),
-            )
-            .unwrap();
-
-        game.entities
-            .place(
-                game.map.location(Coordinates(2, 1)).unwrap(),
-                Object::Building(&p1, Building::Base(Resources(10))),
-            )
-            .unwrap();
-        game.entities
-            .place(
-                game.map.location(Coordinates(5, 6)).unwrap(),
-                Object::Building(&p2, Building::Base(Resources(10))),
-            )
-            .unwrap();
-
-        game.entities
-            .place(
-                game.map.location(Coordinates(2, 2)).unwrap(),
-                Object::Unit(&p1, Unit::Worker),
-            )
-            .unwrap();
-        game.entities
-            .place(
-                game.map.location(Coordinates(5, 5)).unwrap(),
-                Object::Unit(&p2, Unit::Worker),
-            )
-            .unwrap();
+        let mut game = game_builder.build(round);
 
         println!("{}", game);
 

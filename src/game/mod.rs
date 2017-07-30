@@ -8,8 +8,7 @@ use std::ptr;
 use itertools::Itertools;
 
 // Flat structure for AI
-// TODO: probably GameView should do this as it will be the main API for AI
-pub use game::map::{Map, Direction, Coordinates, Location, Tile};
+pub use game::map::{Map, Dimension, Direction, Coordinates, Location, Tile};
 pub use game::entity::{Entity, Object, Iter as EntitiesIter, EntitiesError, Unit, Building,
                        Resources, Entities, EntityID};
 pub use game::player::{Player, Colour, AI, EmptyPersistentState, Owned};
@@ -19,8 +18,7 @@ use game_view::GameView;
 pub struct Game<'p, 'm> {
     name: String,
     round: u32,
-    // TODO: hide begind GameView
-    pub map: &'m Map,
+    map: &'m Map,
     pub entities: Entities<'p, 'm>,
 }
 
@@ -43,9 +41,9 @@ pub enum InvalidMove<'m> {
 }
 
 impl<'p, 'm> Game<'p, 'm> {
-    pub fn new<N: Into<String>>(name: N, round: u32, map: &'m Map) -> Game {
+    pub fn new(name: String, round: u32, map: &'m Map) -> Game {
         Game {
-            name: name.into(),
+            name: name,
             round: round,
             map: map,
             entities: Entities::new(),
@@ -53,10 +51,7 @@ impl<'p, 'm> Game<'p, 'm> {
     }
 
     pub fn view_for<'g>(&'g self, player: &'p Player) -> GameView<'p, 'm, 'g> {
-        GameView {
-            game: self,
-            player: player,
-        }
+        GameView::new(self, player)
     }
 
     fn move_entity(
@@ -133,6 +128,47 @@ impl<'p, 'm> Game<'p, 'm> {
                     )
                 }
             }
+        }
+    }
+}
+
+//TODO: Error
+#[derive(Debug)]
+pub enum GameBuilderError<'m> {
+    OutOfMap(Coordinates),
+    EntityPlaceError(EntitiesError<'m>)
+}
+
+#[derive(Debug)]
+pub struct GameBuilder<'p, 'm> {
+    name: String,
+    map: &'m Map,
+    entities: Entities<'p, 'm>,
+}
+
+impl<'p, 'm> GameBuilder<'p, 'm> {
+    pub fn new<N: Into<String>>(name: N, map: &'m Map) -> GameBuilder<'p, 'm> {
+        GameBuilder {
+            name: name.into(),
+            map: map,
+            entities: Entities::new(),
+        }
+    }
+
+    pub fn place(&mut self, coordinates: Coordinates, object: Object<'p>) -> Result<&mut GameBuilder<'p, 'm>, GameBuilderError<'m>> {
+        self.map.location(coordinates)
+            .ok_or_else(|| GameBuilderError::OutOfMap(coordinates))
+            .and_then(|location| self.entities.place(location, object)
+                      .map_err(|place_error| GameBuilderError::EntityPlaceError(place_error)))
+            .map(|_| self)
+    }
+
+    pub fn build(&self, round: u32) -> Game<'p, 'm> {
+        Game {
+            name: self.name.clone(),
+            round: round,
+            map: self.map.clone(),
+            entities: self.entities.clone(),
         }
     }
 }

@@ -5,23 +5,23 @@ use std::collections::hash_map::Iter as HashMapIter;
 use game::player::Player;
 use game::map::Location;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Unit {
     Worker,
     Light,
     Heavy,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Resources(pub u64);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Building {
     Base(Resources),
     Barracks,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Object<'p> {
     Unit(&'p Player, Unit),
     Building(&'p Player, Building),
@@ -33,7 +33,7 @@ pub enum Object<'p> {
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 pub struct EntityID(pub usize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Entity<'m, 'p> {
     pub id: EntityID,
     pub location: Location<'m>,
@@ -42,7 +42,7 @@ pub struct Entity<'m, 'p> {
 
 type LocationIndex<'m> = HashMap<Location<'m>, EntityID>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Entities<'p, 'm> {
     entities: HashMap<EntityID, Entity<'m, 'p>>,
     entity_id_seq: RangeFrom<usize>,

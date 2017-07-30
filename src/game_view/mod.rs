@@ -1,20 +1,13 @@
 use game::{Game, Entity, EntityID, Object, Unit, EntitiesIter, Player, Location, Direction};
 use std::ptr;
 
-//TODO: all pub exprots for AI should be here
-//TODO: shorten some lifetimes to 'g - we proably don't need all the details
-
 #[derive(Debug)]
 pub struct GameView<'p: 'g, 'm: 'g, 'g> {
-    //TODO: make private
-    pub game: &'g Game<'p, 'm>,
+    game: &'g Game<'p, 'm>,
     pub player: &'p Player,
 }
-// TODO: AI should only be able to call methods on GameView - make game private
 // TODO: GameView should build NavigationMap which includes Map tiles and Entities and can be
 // navigated with Navigators (like Location but over NavigaionMap and with path finding stuff)
-// TODO: move to GameView
-//
 
 /*
 pub struct NavigationMap<'p: 'm, 'm: 'e, 'e> {
@@ -26,8 +19,14 @@ impl<'p: 'm, 'm: 'e, 'e> NavigationMap<'p, 'm, 'e> {
 */
 
 impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
+    pub fn new(game: &'g Game<'p, 'm>, player: &'p Player) -> GameView<'p, 'm, 'g> {
+        GameView {
+            game: game,
+            player: player,
+        }
+    }
+
     pub fn navigator<'v>(&'v self, location: Location<'m>) -> Navigator<'p, 'm, 'g, 'v> {
-        // TODO: index entities in map like matrix for quick access
         let entity = self.game.entities.get_by_location(location);
         Navigator {
             game_view: self,

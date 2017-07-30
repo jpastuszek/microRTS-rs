@@ -187,12 +187,27 @@ pub struct Map {
     tiles: Vec<Vec<Tile>>, // TODO: Matix
 }
 
-impl Map {
-    pub fn new(width: usize, height: usize) -> Map {
-        //TODO: make Dimension type that need to by build and unwrapped
-        if width == 0 || height == 0 {
-            panic!("Map cannot have 0 dimension!");
+pub struct Dimension(usize);
+
+impl Dimension {
+    pub fn new(dimension: usize) -> Option<Dimension> {
+        if dimension > 0 {
+            Some(Dimension(dimension))
+        } else {
+            None
         }
+    }
+
+    pub fn unwrap(self) -> usize {
+        self.0
+    }
+}
+
+
+impl Map {
+    pub fn new(width: Dimension, height: Dimension) -> Map {
+        let width = width.unwrap();
+        let height = height.unwrap();
 
         Map {
             tiles: (0..height)
