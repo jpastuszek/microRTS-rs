@@ -19,7 +19,7 @@ pub struct Game<'p, 'm> {
     name: String,
     round: u32,
     map: &'m Map,
-    pub entities: Entities<'p, 'm>,
+    entities: Entities<'p, 'm>,
 }
 
 //TODO: Error trait
@@ -52,6 +52,14 @@ impl<'p, 'm> Game<'p, 'm> {
 
     pub fn view_for<'g>(&'g self, player: &'p Player) -> GameView<'p, 'm, 'g> {
         GameView::new(self, player)
+    }
+
+    pub fn entities<'g>(&'g self) -> EntitiesIter<'p, 'm, 'g> {
+        self.entities.iter()
+    }
+
+    pub fn get_entity_by_location<'g> (&'g self, location: Location<'m>) -> Option<&'g Entity<'m, 'p>> {
+        self.entities.get_by_location(location)
     }
 
     fn move_entity(

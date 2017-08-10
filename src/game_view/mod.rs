@@ -27,7 +27,7 @@ impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
     }
 
     pub fn navigator<'v>(&'v self, location: Location<'m>) -> Navigator<'p, 'm, 'g, 'v> {
-        let entity = self.game.entities.get_by_location(location);
+        let entity = self.game.get_entity_by_location(location);
         Navigator {
             game_view: self,
             location: location,
@@ -36,7 +36,7 @@ impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
     }
 
     pub fn entities(&self) -> EntitiesIter<'p, 'm, 'g> {
-        self.game.entities.iter()
+        self.game.entities()
     }
 
     pub fn my_units<'v>(&'v self) -> MyUnits<'p, 'm, 'g, 'v> {
