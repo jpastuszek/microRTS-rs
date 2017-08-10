@@ -1,5 +1,6 @@
 use game::{Game, Entity, EntityID, Object, Unit, EntitiesIter, Player, Location, Direction};
 use std::ptr;
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug)]
 pub struct GameView<'p: 'g, 'm: 'g, 'g> {
@@ -89,11 +90,45 @@ pub struct Navigator<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
     pub entity: Option<&'g Entity<'m, 'p>>,
 }
 
+impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> PartialEq for Navigator<'p, 'm, 'g, 'v> {
+    fn eq(&self, other: &Navigator<'p, 'm, 'g, 'v>) -> bool {
+        self.location == other.location
+    }
+}
+
+impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Eq for Navigator<'p, 'm, 'g, 'v> {}
+
+impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Hash for Navigator<'p, 'm, 'g, 'v> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.location.hash(state);
+    }
+}
+
+impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Clone for Navigator<'p, 'm, 'g, 'v> {
+    fn clone(&self) -> Self {
+        Navigator {
+            game_view: self.game_view,
+            location: self.location.clone(),
+            entity: self.entity
+        }
+    }
+}
+
 impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
     pub fn in_direction(&self, direction: Direction) -> Option<Navigator<'p, 'm, 'g, 'v>> {
         self.location.in_direction(direction).map(|location| {
             self.game_view.navigator(location)
         })
+    }
+
+    pub fn path_dijkstra(&self, to: Navigator<'p, 'm, 'g, 'v>) -> Option<(Vec<Navigator<'p, 'm, 'g, 'v>>, u64)> {
+        use pathfinding::dijkstra;
+        dijkstra(
+            self,
+            |navigator| navigator.location.neighbours()
+                .map(|(_direction, location)| (self.game_view.navigator(location), 1)),
+            |navigator| navigator.location == to.location
+        )
     }
 
     pub fn walkable(&self) -> bool {

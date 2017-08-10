@@ -1,5 +1,6 @@
 extern crate itertools;
 extern crate ansi_term;
+extern crate pathfinding;
 
 mod game;
 mod game_view;

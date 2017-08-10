@@ -116,9 +116,9 @@ impl<'m> Hash for Location<'m> {
 }
 
 impl<'m> Location<'m> {
-    pub fn neighbours<'l>(&'l self) -> NeighboursIter<'m, 'l> {
+    pub fn neighbours(&self) -> NeighboursIter<'m> {
         NeighboursIter {
-            location: self,
+            location: self.clone(),
             directions: Direction::clockwise(),
         }
     }
@@ -139,12 +139,12 @@ impl<'m> Location<'m> {
     }
 }
 
-pub struct NeighboursIter<'m: 'l, 'l> {
-    location: &'l Location<'m>,
+pub struct NeighboursIter<'m> {
+    location: Location<'m>,
     directions: DirectionClockwiseIter,
 }
 
-impl<'m: 'l, 'l> Iterator for NeighboursIter<'m, 'l> {
+impl<'m> Iterator for NeighboursIter<'m> {
     type Item = (Direction, Location<'m>);
 
     fn next(&mut self) -> Option<(Direction, Location<'m>)> {

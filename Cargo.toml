@@ -6,3 +6,4 @@ version = "0.1.0"
 [dependencies]
 ansi_term = "0.9.0"
 itertools = "0.6.0"
+pathfinding = "0.1.13"
