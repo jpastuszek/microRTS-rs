@@ -13,23 +13,23 @@ impl AI for TestAI {
     ) -> Vec<Desire> {
         let mut desires = Vec::new();
 
-        if let Some(resource) = view.resources().next() {
-            for unit in view.my_units() {
-                match unit.unit {
-                    &Unit::Worker => {
-                        //TODO: cleanup, remember path, select resource by distance
-                        println!("{:?}", &unit.navigator);
-                        if let Some((path, _cost)) = unit.navigator.find_path_dijkstra(&resource.navigator) {
-                            println!("{:?}", &path);
-                            if let Some(next_navigator) = path.iter().skip(1).next() {
-                                if let Some(direction) = unit.navigator.direction_to(next_navigator) {
-                                    desires.push(Desire::Move(unit.entity_id, direction));
-                                }
-                            }
-                        }
+        //TODO: remember path calculation
+        for unit in view.my_units() {
+            match unit.unit {
+                &Unit::Worker => {
+                    let mut resources_paths = view.resources()
+                        .filter_map(|resource| unit.navigator.find_path_dijkstra(&resource.navigator))
+                        .collect::<Vec<_>>();
+
+                    resources_paths.sort_by_key(|&(_, cost)| cost);
+
+                    if let Some(&(ref path, _cost)) = resources_paths.first() {
+                        path.iter().skip(1).next()
+                            .and_then(|next_navigator| unit.navigator.direction_to(next_navigator))
+                            .map(|direction| desires.push(Desire::Move(unit.entity_id, direction)));
                     }
-                    _ => (),
                 }
+                _ => (),
             }
         }
 

@@ -17,7 +17,7 @@ fn main() {
     println!("Starting game");
 
     let rounds = 1;
-    let cycles = 10;
+    let cycles = 5;
 
     let mut map = Map::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap());
     *map.get_mut_tile(Coordinates(2, 5)).unwrap() = Tile::Wall;

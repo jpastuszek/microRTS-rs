@@ -167,7 +167,7 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
             self,
             |navigator| navigator.location.neighbours()
                 .map(|(_direction, location)| (self.game_view.navigator(location), 1))
-                .filter(|&(ref target, _)| target.walkable() || target.location == to.location),
+                .filter(|&(ref target, _)| target.walkable() || target == to),
             |navigator| to_neighbour_locations.contains(&navigator.location)
         )
     }
