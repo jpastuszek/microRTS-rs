@@ -81,8 +81,8 @@ fn test_direction_to() {
     assert_eq!(Coordinates(0, 0).direction_to(Coordinates(1, 0)), Some(Direction::Right));
     assert_eq!(Coordinates(2, 0).direction_to(Coordinates(1, 0)), Some(Direction::Left));
 
-    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(0, 1)), Some(Direction::Up));
-    assert_eq!(Coordinates(0, 2).direction_to(Coordinates(0, 1)), Some(Direction::Down));
+    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(0, 1)), Some(Direction::Down));
+    assert_eq!(Coordinates(0, 2).direction_to(Coordinates(0, 1)), Some(Direction::Up));
 
     assert_eq!(Coordinates(0, 0).direction_to(Coordinates(2, 1)), Some(Direction::Right));
     assert_eq!(Coordinates(4, 0).direction_to(Coordinates(2, 1)), Some(Direction::Left));
@@ -90,8 +90,8 @@ fn test_direction_to() {
     assert_eq!(Coordinates(0, 2).direction_to(Coordinates(2, 1)), Some(Direction::Right));
     assert_eq!(Coordinates(4, 2).direction_to(Coordinates(2, 1)), Some(Direction::Left));
 
-    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(1, 2)), Some(Direction::Up));
-    assert_eq!(Coordinates(0, 4).direction_to(Coordinates(1, 2)), Some(Direction::Down));
+    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(1, 2)), Some(Direction::Down));
+    assert_eq!(Coordinates(0, 4).direction_to(Coordinates(1, 2)), Some(Direction::Up));
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
