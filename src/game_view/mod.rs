@@ -1,23 +1,14 @@
-use game::{Game, Entity, EntityID, Object, Unit, EntitiesIter, Player, Location, Direction};
+use pathfinding;
+use game::{Game, Entity, EntityID, Object, Unit, EntitiesIter, Player, Location, Direction, Resource};
 use std::ptr;
 use std::hash::{Hash, Hasher};
+use std::fmt;
 
 #[derive(Debug)]
 pub struct GameView<'p: 'g, 'm: 'g, 'g> {
     game: &'g Game<'p, 'm>,
     pub player: &'p Player,
 }
-// TODO: GameView should build NavigationMap which includes Map tiles and Entities and can be
-// navigated with Navigators (like Location but over NavigaionMap and with path finding stuff)
-
-/*
-pub struct NavigationMap<'p: 'm, 'm: 'e, 'e> {
-    map: &'m Map,
-    entities: &'e Entities<'p, 'm>,
-}
-
-impl<'p: 'm, 'm: 'e, 'e> NavigationMap<'p, 'm, 'e> {
-*/
 
 impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
     pub fn new(game: &'g Game<'p, 'm>, player: &'p Player) -> GameView<'p, 'm, 'g> {
@@ -40,8 +31,15 @@ impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
         self.game.entities()
     }
 
-    pub fn my_units<'v>(&'v self) -> MyUnits<'p, 'm, 'g, 'v> {
-        MyUnits {
+    pub fn my_units<'v>(&'v self) -> MyUnitIter<'p, 'm, 'g, 'v> {
+        MyUnitIter {
+            game_view: self,
+            entities: self.entities(),
+        }
+    }
+
+    pub fn resources<'v>(&'v self) -> ResourcesIter<'p, 'm, 'g, 'v> {
+        ResourcesIter {
             game_view: self,
             entities: self.entities(),
         }
@@ -54,12 +52,12 @@ pub struct MyUnit<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
     pub navigator: Navigator<'p, 'm, 'g, 'v>,
 }
 
-pub struct MyUnits<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
+pub struct MyUnitIter<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
     game_view: &'v GameView<'p, 'm, 'g>,
     entities: EntitiesIter<'p, 'm, 'g>,
 }
 
-impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnits<'p, 'm, 'g, 'v> {
+impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnitIter<'p, 'm, 'g, 'v> {
     type Item = MyUnit<'p, 'm, 'g, 'v>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -84,10 +82,51 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnits<'p, 'm, 'g, 'v> {
     }
 }
 
+pub struct Resources<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
+    pub entity_id: EntityID,
+    pub resource: &'g Resource,
+    pub navigator: Navigator<'p, 'm, 'g, 'v>,
+}
+
+pub struct ResourcesIter<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
+    game_view: &'v GameView<'p, 'm, 'g>,
+    entities: EntitiesIter<'p, 'm, 'g>,
+}
+
+impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for ResourcesIter<'p, 'm, 'g, 'v> {
+    type Item = Resources<'p, 'm, 'g, 'v>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some((entity_id, entity)) = self.entities.next() {
+                match entity {
+                    &Entity { location, object: Object::Resources(ref resource), .. } => {
+                        return Some(Resources {
+                            entity_id: entity_id,
+                            resource: resource,
+                            navigator: self.game_view.navigator(location)
+                        })
+                    }
+                    _ => continue
+                }
+            } else {
+                return None;
+            }
+        }
+    }
+}
+
+//TODO: can I only have 'v?
 pub struct Navigator<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
     game_view: &'v GameView<'p, 'm, 'g>,
     pub location: Location<'m>,
     pub entity: Option<&'g Entity<'m, 'p>>,
+}
+
+impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> fmt::Debug for Navigator<'p, 'm, 'g, 'v> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Navigator({}, {})[{:?}]", self.location.coordinates.0, self.location.coordinates.1, self.entity.map(|entity| entity.id))
+    }
 }
 
 impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> PartialEq for Navigator<'p, 'm, 'g, 'v> {
@@ -121,14 +160,20 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
         })
     }
 
-    pub fn path_dijkstra(&self, to: Navigator<'p, 'm, 'g, 'v>) -> Option<(Vec<Navigator<'p, 'm, 'g, 'v>>, u64)> {
-        use pathfinding::dijkstra;
-        dijkstra(
+    pub fn find_path_dijkstra(&self, to: &Navigator<'p, 'm, 'g, 'v>) -> Option<(Vec<Navigator<'p, 'm, 'g, 'v>>, u64)> {
+        let to_neighbour_locations = to.location.neighbours().map(|(_direction, location)| location).collect::<Vec<_>>();
+
+        pathfinding::dijkstra(
             self,
             |navigator| navigator.location.neighbours()
-                .map(|(_direction, location)| (self.game_view.navigator(location), 1)),
-            |navigator| navigator.location == to.location
+                .map(|(_direction, location)| (self.game_view.navigator(location), 1))
+                .filter(|&(ref target, _)| target.walkable() || target.location == to.location),
+            |navigator| to_neighbour_locations.contains(&navigator.location)
         )
+    }
+
+    pub fn direction_to(&self, to: &Navigator<'p, 'm, 'g, 'v>) -> Option<Direction> {
+        self.location.direction_to(to.location)
     }
 
     pub fn walkable(&self) -> bool {

@@ -10,7 +10,7 @@ use itertools::Itertools;
 // Flat structure for AI
 pub use game::map::{Map, Dimension, Direction, Coordinates, Location, Tile};
 pub use game::entity::{Entity, Object, Iter as EntitiesIter, EntitiesError, Unit, Building,
-                       Resources, Entities, EntityID};
+                       Resource, Entities, EntityID};
 pub use game::player::{Player, Colour, AI, EmptyPersistentState, Owned};
 use game_view::GameView;
 
@@ -71,7 +71,7 @@ impl<'p, 'm> Game<'p, 'm> {
         if let Some(ref mut entity_mutator) = self.entities.get_mutator(entity_id) {
             let current_location = match entity_mutator.entity.object {
                 Object::Building(..) |
-                Object::Resource(..) => {
+                Object::Resources(..) => {
                     return Err(GameRuleViolation::InvalidMove(
                         entity_mutator.entity.id,
                         direction,
@@ -247,7 +247,7 @@ impl<'p, 'm> Display for Game<'p, 'm> {
                                     write_owned_entity(f, player, entity.id, ENTITY_HEAVY)?
                                 }
 
-                                Object::Building(ref player, Building::Base(Resources(res))) => {
+                                Object::Building(ref player, Building::Base(Resource(res))) => {
                                     write!(
                                         f,
                                         "{}",
@@ -257,7 +257,7 @@ impl<'p, 'm> Display for Game<'p, 'm> {
                                 Object::Building(ref player, Building::Barracks) => {
                                     write_owned_entity(f, player, entity.id, ENTITY_BARRACS)?
                                 }
-                                Object::Resource(res) => {
+                                Object::Resources(Resource(res)) => {
                                     write!(f, "{}{:2}", ENTITY_RESOURCES, res)?
                                 }
                             }

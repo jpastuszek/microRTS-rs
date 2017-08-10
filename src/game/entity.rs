@@ -13,11 +13,11 @@ pub enum Unit {
 }
 
 #[derive(Debug, Clone)]
-pub struct Resources(pub u64);
+pub struct Resource(pub u64);
 
 #[derive(Debug, Clone)]
 pub enum Building {
-    Base(Resources),
+    Base(Resource),
     Barracks,
 }
 
@@ -25,7 +25,7 @@ pub enum Building {
 pub enum Object<'p> {
     Unit(&'p Player, Unit),
     Building(&'p Player, Building),
-    Resource(u64),
+    Resources(Resource),
 }
 
 // Using Copy object to reference entities to allow them to be modified, removed

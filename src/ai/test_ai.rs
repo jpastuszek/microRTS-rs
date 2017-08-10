@@ -1,4 +1,4 @@
-use game::{AI, EmptyPersistentState, Desire, Unit, Direction};
+use game::{AI, EmptyPersistentState, Desire, Unit};
 use game_view::GameView;
 
 #[derive(Default)]
@@ -13,18 +13,23 @@ impl AI for TestAI {
     ) -> Vec<Desire> {
         let mut desires = Vec::new();
 
-        for unit in view.my_units() {
-            match unit.unit {
-                &Unit::Worker => {
-                    match unit.navigator.in_direction(Direction::Right) {
-                        Some(ref navigator) if navigator.walkable() => {
-                            // just go right you entity!
-                            desires.push(Desire::Move(unit.entity_id, Direction::Right));
+        if let Some(resource) = view.resources().next() {
+            for unit in view.my_units() {
+                match unit.unit {
+                    &Unit::Worker => {
+                        //TODO: cleanup, remember path, select resource by distance
+                        println!("{:?}", &unit.navigator);
+                        if let Some((path, _cost)) = unit.navigator.find_path_dijkstra(&resource.navigator) {
+                            println!("{:?}", &path);
+                            if let Some(next_navigator) = path.iter().skip(1).next() {
+                                if let Some(direction) = unit.navigator.direction_to(next_navigator) {
+                                    desires.push(Desire::Move(unit.entity_id, direction));
+                                }
+                            }
                         }
-                        _ => (),
                     }
+                    _ => (),
                 }
-                _ => (),
             }
         }
 

@@ -8,7 +8,7 @@ mod ai;
 
 use itertools::interleave;
 
-use game::{Player, Colour, AI, Owned, GameBuilder, Object, Unit, Building, Resources, Map, Dimension, Tile,
+use game::{Player, Colour, AI, Owned, GameBuilder, Object, Unit, Building, Resource, Map, Dimension, Tile,
            Coordinates};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
@@ -17,7 +17,7 @@ fn main() {
     println!("Starting game");
 
     let rounds = 1;
-    let cycles = 4;
+    let cycles = 10;
 
     let mut map = Map::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap());
     *map.get_mut_tile(Coordinates(2, 5)).unwrap() = Tile::Wall;
@@ -34,10 +34,10 @@ fn main() {
     let mut game_builder = GameBuilder::new("foo", &map);
 
     game_builder
-        .place(Coordinates(0, 0), Object::Resource(10)).unwrap()
-        .place(Coordinates(7, 7), Object::Resource(10)).unwrap()
-        .place(Coordinates(2, 1), Object::Building(&p1, Building::Base(Resources(10)))).unwrap()
-        .place(Coordinates(5, 6), Object::Building(&p2, Building::Base(Resources(10)))).unwrap()
+        .place(Coordinates(0, 0), Object::Resources(Resource(10))).unwrap()
+        .place(Coordinates(7, 7), Object::Resources(Resource(10))).unwrap()
+        .place(Coordinates(2, 1), Object::Building(&p1, Building::Base(Resource(10)))).unwrap()
+        .place(Coordinates(5, 6), Object::Building(&p2, Building::Base(Resource(10)))).unwrap()
         .place(Coordinates(2, 2), Object::Unit(&p1, Unit::Worker)).unwrap()
         .place(Coordinates(5, 5), Object::Unit(&p2, Unit::Worker)).unwrap();
 

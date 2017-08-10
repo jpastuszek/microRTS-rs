@@ -22,6 +22,22 @@ impl Coordinates {
             _ => None,
         }
     }
+
+    pub fn direction_to(&self, to: Coordinates) -> Option<Direction> {
+        if self.0 == to.0 && self.1 == to.1 {
+            return None
+        }
+
+        Some(if to.1 + to.0 >= self.1 + self.0 && to.1 + self.0 > to.0 + self.1 {
+            Direction::Down
+        } else if to.1 + self.0 <= to.0 + self.1 && to.1 + to.0 > self.1 + self.0 {
+            Direction::Right
+        } else if to.1 + to.0 <= self.1 + self.0 && to.1 + self.0 < to.0 + self.1 {
+            Direction::Up
+        } else {
+            Direction::Left
+        })
+    }
 }
 
 #[test]
@@ -56,6 +72,26 @@ fn in_direction_overflow() {
             .in_direction(Direction::Right)
             .is_none()
     );
+}
+
+#[test]
+fn test_direction_to() {
+    assert_eq!(Coordinates(1, 1).direction_to(Coordinates(1, 1)), None);
+
+    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(1, 0)), Some(Direction::Right));
+    assert_eq!(Coordinates(2, 0).direction_to(Coordinates(1, 0)), Some(Direction::Left));
+
+    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(0, 1)), Some(Direction::Up));
+    assert_eq!(Coordinates(0, 2).direction_to(Coordinates(0, 1)), Some(Direction::Down));
+
+    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(2, 1)), Some(Direction::Right));
+    assert_eq!(Coordinates(4, 0).direction_to(Coordinates(2, 1)), Some(Direction::Left));
+
+    assert_eq!(Coordinates(0, 2).direction_to(Coordinates(2, 1)), Some(Direction::Right));
+    assert_eq!(Coordinates(4, 2).direction_to(Coordinates(2, 1)), Some(Direction::Left));
+
+    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(1, 2)), Some(Direction::Up));
+    assert_eq!(Coordinates(0, 4).direction_to(Coordinates(1, 2)), Some(Direction::Down));
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -131,6 +167,10 @@ impl<'m> Location<'m> {
         )
     }
 
+    pub fn direction_to(&self, to: Location<'m>) -> Option<Direction> {
+        self.coordinates.direction_to(to.coordinates)
+    }
+
     pub fn walkable(&self) -> bool {
         match *self.tile {
             Tile::Empty => true,
@@ -162,7 +202,7 @@ impl<'m> Iterator for NeighboursIter<'m> {
 
 #[test]
 fn location_neighbours() {
-    let map = Map::new(8, 8);
+    let map = Map::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap());
 
     assert_eq!(
         map.location(Coordinates(0, 0))
