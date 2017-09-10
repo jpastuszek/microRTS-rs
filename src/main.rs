@@ -8,7 +8,7 @@ mod ai;
 
 use itertools::interleave;
 
-use game::{Player, Colour, AI, Owned, GameBuilder, Object, Unit, Building, Resource, Map, Dimension, Tile,
+use game::{Player, Colour, AI, Owned, GameBuilder, Object, Unit, Building, Resource, MapBuilder, Dimension, Tile,
            Coordinates};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
@@ -19,10 +19,10 @@ fn main() {
     let rounds = 1;
     let cycles = 5;
 
-    let mut map = Map::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap());
-    *map.get_mut_tile(Coordinates(2, 5)).unwrap() = Tile::Wall;
-    *map.get_mut_tile(Coordinates(5, 2)).unwrap() = Tile::Wall;
-    let map = map;
+    let map = MapBuilder::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap())
+        .place(Coordinates(2, 5), Tile::Wall).unwrap()
+        .place(Coordinates(5, 2), Tile::Wall).unwrap()
+        .build();
 
     let p1 = Player::new("Mario", Colour::Red);
     let p2 = Player::new("Luigi", Colour::Green);
@@ -42,7 +42,7 @@ fn main() {
         .place(Coordinates(5, 5), Object::Unit(&p2, Unit::Worker)).unwrap();
 
     for round in 0..rounds {
-        let mut game = game_builder.build(round);
+        let mut game = game_builder.build_for_round(round);
 
         println!("{}", game);
 

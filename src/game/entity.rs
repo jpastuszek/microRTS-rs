@@ -52,7 +52,7 @@ pub struct Entities<'p, 'm> {
 #[derive(Debug)]
 pub enum EntitiesError<'m> {
     LocationNotWalkable(Location<'m>),
-    LocationAlreadyTaken(Location<'m>, EntityID),
+    LocationAlreadyOccupied(Location<'m>, EntityID),
 }
 
 pub struct EntityMutator<'p: 'e, 'm: 'e, 'e> {
@@ -68,7 +68,7 @@ impl<'p: 'e, 'm: 'e, 'e> EntityMutator<'p, 'm, 'e> {
         }
 
         if let Some(entity_id) = self.location_index.get(&location) {
-            return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
+            return Err(EntitiesError::LocationAlreadyOccupied(location, *entity_id));
         }
 
         let entity_location = &mut self.entity.location;
@@ -105,7 +105,7 @@ impl<'p, 'm> Entities<'p, 'm> {
         }
 
         if let Some(entity_id) = self.location_index.get(&location) {
-            return Err(EntitiesError::LocationAlreadyTaken(location, *entity_id));
+            return Err(EntitiesError::LocationAlreadyOccupied(location, *entity_id));
         }
 
         let entity_id = EntityID(self.entity_id_seq.next().expect("out of IDs"));

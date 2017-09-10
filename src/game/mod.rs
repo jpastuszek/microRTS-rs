@@ -8,7 +8,7 @@ use std::ptr;
 use itertools::Itertools;
 
 // Flat structure for AI
-pub use game::map::{Map, Dimension, Direction, Coordinates, Location, Tile};
+pub use game::map::{Map, MapBuilder, MapBuilderError, Dimension, Direction, Coordinates, Location, Tile};
 pub use game::entity::{Entity, Object, Iter as EntitiesIter, EntitiesError, Unit, Building,
                        Resource, Entities, EntityID};
 pub use game::player::{Player, Colour, AI, EmptyPersistentState, Owned};
@@ -41,15 +41,6 @@ pub enum InvalidMove<'m> {
 }
 
 impl<'p, 'm> Game<'p, 'm> {
-    pub fn new(name: String, round: u32, map: &'m Map) -> Game {
-        Game {
-            name: name,
-            round: round,
-            map: map,
-            entities: Entities::new(),
-        }
-    }
-
     pub fn view_for<'g>(&'g self, player: &'p Player) -> GameView<'p, 'm, 'g> {
         GameView::new(self, player)
     }
@@ -109,7 +100,7 @@ impl<'p, 'm> Game<'p, 'm> {
                             InvalidMove::NotWalkable(new_location),
                         )
                     }
-                    EntitiesError::LocationAlreadyTaken(new_location, by_entity_id) => {
+                    EntitiesError::LocationAlreadyOccupied(new_location, by_entity_id) => {
                         GameRuleViolation::InvalidMove(
                             entity_id,
                             direction,
@@ -171,7 +162,7 @@ impl<'p, 'm> GameBuilder<'p, 'm> {
             .map(|_| self)
     }
 
-    pub fn build(&self, round: u32) -> Game<'p, 'm> {
+    pub fn build_for_round(&self, round: u32) -> Game<'p, 'm> {
         Game {
             name: self.name.clone(),
             round: round,

@@ -148,7 +148,7 @@ impl<'m> Iterator for NeighboursIter<'m> {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum Tile {
     Empty,
     Wall,
@@ -175,31 +175,13 @@ impl Dimension {
     }
 }
 
-
 impl Map {
-    pub fn new(width: Dimension, height: Dimension) -> Map {
-        let width = width.unwrap();
-        let height = height.unwrap();
-
-        Map {
-            tiles: (0..height)
-                .map(|_row| (0..width).map(|_col| Tile::Empty).collect())
-                .collect(),
-        }
-    }
-
     pub fn width(&self) -> usize {
         self.tiles.iter().next().unwrap().len()
     }
 
     pub fn height(&self) -> usize {
         self.tiles.len()
-    }
-
-    pub fn get_mut_tile(&mut self, coordinates: Coordinates) -> Option<&mut Tile> {
-        self.tiles
-            .get_mut(coordinates.1)
-            .and_then(|row| row.get_mut(coordinates.0))
     }
 
     pub fn location(&self, coordinates: Coordinates) -> Option<Location> {
@@ -225,6 +207,53 @@ impl Map {
         }
         let maps = Some(self).into_iter().cycle();
         RowIter(self.tiles.iter().zip(maps).enumerate().map(to_row))
+    }
+}
+
+//TODO: Error
+#[derive(Debug)]
+pub enum MapBuilderError {
+    OutOfMap(Coordinates),
+    CoordinatesAlreadyOccupied(Coordinates, Tile),
+}
+
+pub struct MapBuilder {
+    tiles: Vec<Vec<Tile>>, // TODO: Matix
+}
+
+impl MapBuilder {
+    pub fn new(width: Dimension, height: Dimension) -> MapBuilder {
+        let width = width.unwrap();
+        let height = height.unwrap();
+
+        MapBuilder {
+            tiles: (0..height)
+                .map(|_row| (0..width).map(|_col| Tile::Empty).collect())
+                .collect(),
+        }
+    }
+
+    pub fn place(mut self, coordinates: Coordinates, tile: Tile) -> Result<MapBuilder, MapBuilderError> {
+        self.tiles
+            .get_mut(coordinates.1)
+            .and_then(|row| row.get_mut(coordinates.0))
+            .ok_or(MapBuilderError::OutOfMap(coordinates))
+            .and_then(|map_tile| if *map_tile != Tile::Empty {
+                Err(MapBuilderError::CoordinatesAlreadyOccupied(
+                    coordinates,
+                    map_tile.clone(),
+                ))
+            } else {
+                Ok(map_tile)
+            })
+            .map(|map_tile| *map_tile = tile)
+            .map(|_| self)
+    }
+
+    pub fn build(self) -> Map {
+        Map {
+            tiles: self.tiles
+        }
     }
 }
 
@@ -368,7 +397,7 @@ mod tests {
 
     #[test]
     fn location_neighbours() {
-        let map = Map::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap());
+        let map = MapBuilder::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap()).build();
 
         assert_eq!(
             map.location(Coordinates(0, 0))
