@@ -6,20 +6,20 @@ use std::hash::{Hash, Hasher};
 use std::fmt;
 
 #[derive(Debug)]
-pub struct GameView<'p: 'g, 'm: 'g, 'g> {
-    game: &'g Game<'p, 'm>,
+pub struct GameView<'p: 'g, 't: 'g, 'g> {
+    game: &'g Game<'p, 't>,
     pub player: &'p Player,
 }
 
-impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
-    pub fn new(game: &'g Game<'p, 'm>, player: &'p Player) -> GameView<'p, 'm, 'g> {
+impl<'p: 'g, 't: 'g, 'g> GameView<'p, 't, 'g> {
+    pub fn new(game: &'g Game<'p, 't>, player: &'p Player) -> GameView<'p, 't, 'g> {
         GameView {
             game: game,
             player: player,
         }
     }
 
-    pub fn navigator<'v>(&'v self, location: Location<'m>) -> Navigator<'p, 'm, 'g, 'v> {
+    pub fn navigator<'v>(&'v self, location: Location<'t>) -> Navigator<'p, 't, 'g, 'v> {
         let entity = self.game.get_entity_by_location(location);
         Navigator {
             game_view: self,
@@ -28,18 +28,18 @@ impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
         }
     }
 
-    pub fn entities(&self) -> EntitiesIter<'p, 'm, 'g> {
+    pub fn entities(&self) -> EntitiesIter<'p, 't, 'g> {
         self.game.entities()
     }
 
-    pub fn my_units<'v>(&'v self) -> MyUnitIter<'p, 'm, 'g, 'v> {
+    pub fn my_units<'v>(&'v self) -> MyUnitIter<'p, 't, 'g, 'v> {
         MyUnitIter {
             game_view: self,
             entities: self.entities(),
         }
     }
 
-    pub fn resources<'v>(&'v self) -> ResourcesIter<'p, 'm, 'g, 'v> {
+    pub fn resources<'v>(&'v self) -> ResourcesIter<'p, 't, 'g, 'v> {
         ResourcesIter {
             game_view: self,
             entities: self.entities(),
@@ -47,19 +47,19 @@ impl<'p: 'g, 'm: 'g, 'g> GameView<'p, 'm, 'g> {
     }
 }
 
-pub struct MyUnit<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
+pub struct MyUnit<'p: 't, 't: 'g, 'g: 'v, 'v> {
     pub entity_id: EntityID,
     pub unit: &'g Unit,
-    pub navigator: Navigator<'p, 'm, 'g, 'v>,
+    pub navigator: Navigator<'p, 't, 'g, 'v>,
 }
 
-pub struct MyUnitIter<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
-    game_view: &'v GameView<'p, 'm, 'g>,
-    entities: EntitiesIter<'p, 'm, 'g>,
+pub struct MyUnitIter<'p: 't, 't: 'g, 'g: 'v, 'v> {
+    game_view: &'v GameView<'p, 't, 'g>,
+    entities: EntitiesIter<'p, 't, 'g>,
 }
 
-impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnitIter<'p, 'm, 'g, 'v> {
-    type Item = MyUnit<'p, 'm, 'g, 'v>;
+impl<'p: 't, 't: 'g, 'g: 'v, 'v> Iterator for MyUnitIter<'p, 't, 'g, 'v> {
+    type Item = MyUnit<'p, 't, 'g, 'v>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -83,19 +83,19 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for MyUnitIter<'p, 'm, 'g, 'v> {
     }
 }
 
-pub struct Resources<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
+pub struct Resources<'p: 't, 't: 'g, 'g: 'v, 'v> {
     pub entity_id: EntityID,
     pub resource: &'g Resource,
-    pub navigator: Navigator<'p, 'm, 'g, 'v>,
+    pub navigator: Navigator<'p, 't, 'g, 'v>,
 }
 
-pub struct ResourcesIter<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
-    game_view: &'v GameView<'p, 'm, 'g>,
-    entities: EntitiesIter<'p, 'm, 'g>,
+pub struct ResourcesIter<'p: 't, 't: 'g, 'g: 'v, 'v> {
+    game_view: &'v GameView<'p, 't, 'g>,
+    entities: EntitiesIter<'p, 't, 'g>,
 }
 
-impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for ResourcesIter<'p, 'm, 'g, 'v> {
-    type Item = Resources<'p, 'm, 'g, 'v>;
+impl<'p: 't, 't: 'g, 'g: 'v, 'v> Iterator for ResourcesIter<'p, 't, 'g, 'v> {
+    type Item = Resources<'p, 't, 'g, 'v>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -122,13 +122,13 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for ResourcesIter<'p, 'm, 'g, 'v> {
 }
 
 //TODO: can I only have 'v?
-pub struct Navigator<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
-    game_view: &'v GameView<'p, 'm, 'g>,
-    pub location: Location<'m>,
-    pub entity: Option<&'g Entity<'m, 'p>>,
+pub struct Navigator<'p: 't, 't: 'g, 'g: 'v, 'v> {
+    game_view: &'v GameView<'p, 't, 'g>,
+    pub location: Location<'t>,
+    pub entity: Option<&'g Entity<'t, 'p>>,
 }
 
-impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> fmt::Debug for Navigator<'p, 'm, 'g, 'v> {
+impl<'p: 't, 't: 'g, 'g: 'v, 'v> fmt::Debug for Navigator<'p, 't, 'g, 'v> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -140,21 +140,21 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> fmt::Debug for Navigator<'p, 'm, 'g, 'v> {
     }
 }
 
-impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> PartialEq for Navigator<'p, 'm, 'g, 'v> {
-    fn eq(&self, other: &Navigator<'p, 'm, 'g, 'v>) -> bool {
+impl<'p: 't, 't: 'g, 'g: 'v, 'v> PartialEq for Navigator<'p, 't, 'g, 'v> {
+    fn eq(&self, other: &Navigator<'p, 't, 'g, 'v>) -> bool {
         self.location == other.location
     }
 }
 
-impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Eq for Navigator<'p, 'm, 'g, 'v> {}
+impl<'p: 't, 't: 'g, 'g: 'v, 'v> Eq for Navigator<'p, 't, 'g, 'v> {}
 
-impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Hash for Navigator<'p, 'm, 'g, 'v> {
+impl<'p: 't, 't: 'g, 'g: 'v, 'v> Hash for Navigator<'p, 't, 'g, 'v> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.location.hash(state);
     }
 }
 
-impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Clone for Navigator<'p, 'm, 'g, 'v> {
+impl<'p: 't, 't: 'g, 'g: 'v, 'v> Clone for Navigator<'p, 't, 'g, 'v> {
     fn clone(&self) -> Self {
         Navigator {
             game_view: self.game_view,
@@ -164,8 +164,8 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Clone for Navigator<'p, 'm, 'g, 'v> {
     }
 }
 
-impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
-    pub fn in_direction(&self, direction: Direction) -> Option<Navigator<'p, 'm, 'g, 'v>> {
+impl<'p: 't, 't: 'g, 'g: 'v, 'v> Navigator<'p, 't, 'g, 'v> {
+    pub fn in_direction(&self, direction: Direction) -> Option<Navigator<'p, 't, 'g, 'v>> {
         self.location
             .in_direction(direction)
             .map(|location| self.game_view.navigator(location))
@@ -173,8 +173,8 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
 
     pub fn find_path_dijkstra(
         &self,
-        to: &Navigator<'p, 'm, 'g, 'v>,
-    ) -> Option<(Vec<Navigator<'p, 'm, 'g, 'v>>, u64)> {
+        to: &Navigator<'p, 't, 'g, 'v>,
+    ) -> Option<(Vec<Navigator<'p, 't, 'g, 'v>>, u64)> {
         let to_neighbour_locations = to.location
             .neighbours()
             .map(|(_direction, location)| location)
@@ -196,7 +196,7 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
         )
     }
 
-    pub fn direction_to(&self, to: &Navigator<'p, 'm, 'g, 'v>) -> Option<Direction> {
+    pub fn direction_to(&self, to: &Navigator<'p, 't, 'g, 'v>) -> Option<Direction> {
         self.location.direction_to(to.location)
     }
 

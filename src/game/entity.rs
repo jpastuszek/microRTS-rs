@@ -3,7 +3,7 @@ use std::ops::RangeFrom;
 use std::collections::hash_map::Iter as HashMapIter;
 
 use game::player::Player;
-use game::map::Location;
+use game::terrain::Location;
 
 #[derive(Debug, Clone)]
 pub enum Unit {
@@ -34,34 +34,34 @@ pub enum Object<'p> {
 pub struct EntityID(pub usize);
 
 #[derive(Debug, Clone)]
-pub struct Entity<'m, 'p> {
+pub struct Entity<'t, 'p> {
     pub id: EntityID,
-    pub location: Location<'m>,
+    pub location: Location<'t>,
     pub object: Object<'p>,
 }
 
-type LocationIndex<'m> = HashMap<Location<'m>, EntityID>;
+type LocationIndex<'t> = HashMap<Location<'t>, EntityID>;
 
 #[derive(Debug, Clone)]
-pub struct Entities<'p, 'm> {
-    entities: HashMap<EntityID, Entity<'m, 'p>>,
+pub struct Entities<'p, 't> {
+    entities: HashMap<EntityID, Entity<'t, 'p>>,
     entity_id_seq: RangeFrom<usize>,
-    location_index: LocationIndex<'m>,
+    location_index: LocationIndex<'t>,
 }
 
 #[derive(Debug)]
-pub enum EntitiesError<'m> {
-    LocationNotWalkable(Location<'m>),
-    LocationAlreadyOccupied(Location<'m>, EntityID),
+pub enum EntitiesError<'t> {
+    LocationNotWalkable(Location<'t>),
+    LocationAlreadyOccupied(Location<'t>, EntityID),
 }
 
-pub struct EntityMutator<'p: 'e, 'm: 'e, 'e> {
-    pub entity: &'e mut Entity<'m, 'p>,
-    location_index: &'e mut LocationIndex<'m>,
+pub struct EntityMutator<'p: 'e, 't: 'e, 'e> {
+    pub entity: &'e mut Entity<'t, 'p>,
+    location_index: &'e mut LocationIndex<'t>,
 }
 
-impl<'p: 'e, 'm: 'e, 'e> EntityMutator<'p, 'm, 'e> {
-    pub fn set_location(&mut self, location: Location<'m>) -> Result<(), EntitiesError<'m>> {
+impl<'p: 'e, 't: 'e, 'e> EntityMutator<'p, 't, 'e> {
+    pub fn set_location(&mut self, location: Location<'t>) -> Result<(), EntitiesError<'t>> {
         // Check if new location is valid for entity to be placed on
         if !location.walkable() {
             return Err(EntitiesError::LocationNotWalkable(location));
@@ -86,8 +86,8 @@ impl<'p: 'e, 'm: 'e, 'e> EntityMutator<'p, 'm, 'e> {
     }
 }
 
-impl<'p, 'm> Entities<'p, 'm> {
-    pub fn new() -> Entities<'p, 'm> {
+impl<'p, 't> Entities<'p, 't> {
+    pub fn new() -> Entities<'p, 't> {
         Entities {
             entities: Default::default(),
             location_index: Default::default(),
@@ -97,9 +97,9 @@ impl<'p, 'm> Entities<'p, 'm> {
 
     pub fn place(
         &mut self,
-        location: Location<'m>,
+        location: Location<'t>,
         object: Object<'p>,
-    ) -> Result<EntityID, EntitiesError<'m>> {
+    ) -> Result<EntityID, EntitiesError<'t>> {
         if !location.walkable() {
             return Err(EntitiesError::LocationNotWalkable(location));
         }
@@ -124,11 +124,11 @@ impl<'p, 'm> Entities<'p, 'm> {
         Ok(entity_id)
     }
 
-    pub fn get<'e>(&'e self, entity_id: EntityID) -> Option<&'e Entity<'m, 'p>> {
+    pub fn get<'e>(&'e self, entity_id: EntityID) -> Option<&'e Entity<'t, 'p>> {
         self.entities.get(&entity_id)
     }
 
-    pub fn get_mutator<'e>(&'e mut self, entity_id: EntityID) -> Option<EntityMutator<'p, 'm, 'e>> {
+    pub fn get_mutator<'e>(&'e mut self, entity_id: EntityID) -> Option<EntityMutator<'p, 't, 'e>> {
         let entities = &mut self.entities;
         let location_index = &mut self.location_index;
 
@@ -140,34 +140,34 @@ impl<'p, 'm> Entities<'p, 'm> {
         })
     }
 
-    pub fn get_by_location<'e>(&'e self, location: Location<'m>) -> Option<&'e Entity<'m, 'p>> {
+    pub fn get_by_location<'e>(&'e self, location: Location<'t>) -> Option<&'e Entity<'t, 'p>> {
         self.location_index.get(&location).and_then(|entity_id| {
             self.get(*entity_id)
         })
     }
 
-    pub fn iter<'e>(&'e self) -> Iter<'p, 'm, 'e> {
+    pub fn iter<'e>(&'e self) -> Iter<'p, 't, 'e> {
         Iter { iter: self.entities.iter() }
     }
 }
 
-impl<'p: 'e, 'm: 'e, 'e> IntoIterator for &'e Entities<'p, 'm> {
-    type IntoIter = Iter<'p, 'm, 'e>;
-    type Item = (EntityID, &'e Entity<'m, 'p>);
+impl<'p: 'e, 't: 'e, 'e> IntoIterator for &'e Entities<'p, 't> {
+    type IntoIter = Iter<'p, 't, 'e>;
+    type Item = (EntityID, &'e Entity<'t, 'p>);
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
 }
 
-pub struct Iter<'p: 'e, 'm: 'e, 'e> {
-    iter: HashMapIter<'e, EntityID, Entity<'m, 'p>>,
+pub struct Iter<'p: 'e, 't: 'e, 'e> {
+    iter: HashMapIter<'e, EntityID, Entity<'t, 'p>>,
 }
 
-impl<'p: 'e, 'm: 'e, 'e> Iterator for Iter<'p, 'm, 'e> {
-    type Item = (EntityID, &'e Entity<'m, 'p>);
+impl<'p: 'e, 't: 'e, 'e> Iterator for Iter<'p, 't, 'e> {
+    type Item = (EntityID, &'e Entity<'t, 'p>);
 
-    fn next(&mut self) -> Option<(EntityID, &'e Entity<'m, 'p>)> {
+    fn next(&mut self) -> Option<(EntityID, &'e Entity<'t, 'p>)> {
         self.iter.next().map(
             |(entity_id, entity)| (*entity_id, entity),
         )

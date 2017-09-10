@@ -6,10 +6,10 @@ pub struct TestAI;
 
 impl AI for TestAI {
     type PersistentState = EmptyPersistentState;
-    fn update<'p: 'g, 's: 'g, 'm: 'g, 'g>(
+    fn update<'p: 'g, 's: 'g, 't: 'g, 'g>(
         &mut self,
         _sate: &'s mut Self::PersistentState,
-        view: GameView<'p, 'm, 'g>,
+        view: GameView<'p, 't, 'g>,
     ) -> Vec<Order> {
         let mut desires = Vec::new();
 

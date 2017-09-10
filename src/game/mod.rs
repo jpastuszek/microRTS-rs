@@ -1,4 +1,4 @@
-mod map;
+mod terrain;
 mod entity;
 mod player;
 
@@ -8,48 +8,48 @@ use std::ptr;
 use itertools::Itertools;
 
 // Flat structure for AI
-pub use game::map::{Map, MapBuilder, MapBuilderError, Dimension, Direction, Coordinates, Location, Tile};
+pub use game::terrain::{Terrain, TerrainBuilder, TerrainBuilderError, Dimension, Direction, Coordinates, Location, Tile};
 pub use game::entity::{Entity, Object, Iter as EntitiesIter, EntitiesError, Unit, Building,
                        Resource, Entities, EntityID};
 pub use game::player::{Player, Colour, AI, EmptyPersistentState, Owned};
 use game_view::GameView;
 
 #[derive(Debug)]
-pub struct Game<'p, 'm> {
+pub struct Game<'p, 't> {
     name: String,
     round: u32,
-    map: &'m Map,
-    entities: Entities<'p, 'm>,
+    terrain: &'t Terrain,
+    entities: Entities<'p, 't>,
 }
 
 //TODO: Error trait
 // This type cannot keep references to Game or Entity so it can be passed back to AI causing the
 // violation
 #[derive(Debug)]
-pub enum GameRuleViolation<'p, 'm> {
-    InvalidMove(EntityID, Direction, InvalidMove<'m>),
+pub enum GameRuleViolation<'p, 't> {
+    InvalidMove(EntityID, Direction, InvalidMove<'t>),
     EntityNotOwned(EntityID, &'p Player),
     EntityDoesNotExist(EntityID),
 }
 
 #[derive(Debug)]
-pub enum InvalidMove<'m> {
-    NotWalkable(Location<'m>),
-    LocationAlreadyTaken(Location<'m>, EntityID),
+pub enum InvalidMove<'t> {
+    NotWalkable(Location<'t>),
+    LocationAlreadyTaken(Location<'t>, EntityID),
     Immovable,
     OutOfMap,
 }
 
-impl<'p, 'm> Game<'p, 'm> {
-    pub fn view_for<'g>(&'g self, player: &'p Player) -> GameView<'p, 'm, 'g> {
+impl<'p, 't> Game<'p, 't> {
+    pub fn view_for<'g>(&'g self, player: &'p Player) -> GameView<'p, 't, 'g> {
         GameView::new(self, player)
     }
 
-    pub fn entities<'g>(&'g self) -> EntitiesIter<'p, 'm, 'g> {
+    pub fn entities<'g>(&'g self) -> EntitiesIter<'p, 't, 'g> {
         self.entities.iter()
     }
 
-    pub fn get_entity_by_location<'g> (&'g self, location: Location<'m>) -> Option<&'g Entity<'m, 'p>> {
+    pub fn get_entity_by_location<'g> (&'g self, location: Location<'t>) -> Option<&'g Entity<'t, 'p>> {
         self.entities.get_by_location(location)
     }
 
@@ -58,7 +58,7 @@ impl<'p, 'm> Game<'p, 'm> {
         player: &'p Player,
         entity_id: EntityID,
         direction: Direction,
-    ) -> Result<(), GameRuleViolation<'p, 'm>> {
+    ) -> Result<(), GameRuleViolation<'p, 't>> {
         if let Some(ref mut entity_mutator) = self.entities.get_mutator(entity_id) {
             let current_location = match entity_mutator.entity.object {
                 Object::Building(..) |
@@ -133,40 +133,40 @@ impl<'p, 'm> Game<'p, 'm> {
 
 //TODO: Error
 #[derive(Debug)]
-pub enum GameBuilderError<'m> {
+pub enum GameBuilderError<'t> {
     OutOfMap(Coordinates),
-    EntityPlaceError(EntitiesError<'m>)
+    EntityPlaceError(EntitiesError<'t>)
 }
 
 #[derive(Debug)]
-pub struct GameBuilder<'p, 'm> {
+pub struct GameBuilder<'p, 't> {
     name: String,
-    map: &'m Map,
-    entities: Entities<'p, 'm>,
+    terrain: &'t Terrain,
+    entities: Entities<'p, 't>,
 }
 
-impl<'p, 'm> GameBuilder<'p, 'm> {
-    pub fn new<N: Into<String>>(name: N, map: &'m Map) -> GameBuilder<'p, 'm> {
+impl<'p, 't> GameBuilder<'p, 't> {
+    pub fn new<N: Into<String>>(name: N, terrain: &'t Terrain) -> GameBuilder<'p, 't> {
         GameBuilder {
             name: name.into(),
-            map: map,
+            terrain: terrain,
             entities: Entities::new(),
         }
     }
 
-    pub fn place(&mut self, coordinates: Coordinates, object: Object<'p>) -> Result<&mut GameBuilder<'p, 'm>, GameBuilderError<'m>> {
-        self.map.location(coordinates)
+    pub fn place(&mut self, coordinates: Coordinates, object: Object<'p>) -> Result<&mut GameBuilder<'p, 't>, GameBuilderError<'t>> {
+        self.terrain.location(coordinates)
             .ok_or_else(|| GameBuilderError::OutOfMap(coordinates))
             .and_then(|location| self.entities.place(location, object)
                       .map_err(|place_error| GameBuilderError::EntityPlaceError(place_error)))
             .map(|_| self)
     }
 
-    pub fn build_for_round(&self, round: u32) -> Game<'p, 'm> {
+    pub fn build_for_round(&self, round: u32) -> Game<'p, 't> {
         Game {
             name: self.name.clone(),
             round: round,
-            map: self.map.clone(),
+            terrain: self.terrain.clone(),
             entities: self.entities.clone(),
         }
     }
@@ -190,7 +190,7 @@ const ENTITY_BASE: &'static str = "@";
 const ENTITY_BARRACS: &'static str = "B";
 const ENTITY_RESOURCES: &'static str = "#";
 
-impl<'p, 'm> Display for Game<'p, 'm> {
+impl<'p, 't> Display for Game<'p, 't> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         fn write_grid_row_line(f: &mut fmt::Formatter, cels: usize) -> Result<(), fmt::Error> {
             write!(
@@ -215,8 +215,8 @@ impl<'p, 'm> Display for Game<'p, 'm> {
             )
         }
 
-        write_grid_row_line(f, self.map.width())?;
-        for row in self.map.rows() {
+        write_grid_row_line(f, self.terrain.width())?;
+        for row in self.terrain.rows() {
             writeln!(f)?;
             for location in row {
                 write!(f, "{}", GRID_VERT_LINE)?;
@@ -259,7 +259,7 @@ impl<'p, 'm> Display for Game<'p, 'm> {
                 }
             }
             writeln!(f, "{}", GRID_VERT_LINE)?;
-            write_grid_row_line(f, self.map.width())?;
+            write_grid_row_line(f, self.terrain.width())?;
         }
 
         Ok(())

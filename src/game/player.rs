@@ -38,10 +38,10 @@ pub trait AI: Default {
     // Returning Vec so that we can make sure that AI run is finished when this function returns
     // Should take Events as input (slice?) which are effect of applying actions and can be used
     // to keep track of changes
-    fn update<'p: 'g, 's: 'g, 'm: 'g, 'g>(
+    fn update<'p: 'g, 's: 'g, 't: 'g, 'g>(
         &mut self,
         sate: &'s mut Self::PersistentState,
-        view: GameView<'p, 'm, 'g>,
+        view: GameView<'p, 't, 'g>,
     ) -> Vec<Order>;
 }
 

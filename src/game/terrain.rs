@@ -81,41 +81,41 @@ impl Iterator for DirectionClockwiseIter {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Location<'m> {
-    map: &'m Map,
+pub struct Location<'t> {
+    terrain: &'t Terrain,
     pub coordinates: Coordinates,
-    pub tile: &'m Tile,
+    pub tile: &'t Tile,
 }
 
-impl<'m> PartialEq for Location<'m> {
-    fn eq(&self, other: &Location<'m>) -> bool {
+impl<'t> PartialEq for Location<'t> {
+    fn eq(&self, other: &Location<'t>) -> bool {
         ptr::eq(self.tile, other.tile)
     }
 }
 
-impl<'m> Eq for Location<'m> {}
+impl<'t> Eq for Location<'t> {}
 
-impl<'m> Hash for Location<'m> {
+impl<'t> Hash for Location<'t> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_usize((self.tile as *const Tile) as usize)
     }
 }
 
-impl<'m> Location<'m> {
-    pub fn neighbours(&self) -> NeighboursIter<'m> {
+impl<'t> Location<'t> {
+    pub fn neighbours(&self) -> NeighboursIter<'t> {
         NeighboursIter {
             location: self.clone(),
             directions: Direction::clockwise(),
         }
     }
 
-    pub fn in_direction(&self, direction: Direction) -> Option<Location<'m>> {
+    pub fn in_direction(&self, direction: Direction) -> Option<Location<'t>> {
         self.coordinates
             .in_direction(direction)
-            .and_then(|coordinates| self.map.location(coordinates))
+            .and_then(|coordinates| self.terrain.location(coordinates))
     }
 
-    pub fn direction_to(&self, to: Location<'m>) -> Option<Direction> {
+    pub fn direction_to(&self, to: Location<'t>) -> Option<Direction> {
         self.coordinates.direction_to(to.coordinates)
     }
 
@@ -127,15 +127,15 @@ impl<'m> Location<'m> {
     }
 }
 
-pub struct NeighboursIter<'m> {
-    location: Location<'m>,
+pub struct NeighboursIter<'t> {
+    location: Location<'t>,
     directions: DirectionClockwiseIter,
 }
 
-impl<'m> Iterator for NeighboursIter<'m> {
-    type Item = (Direction, Location<'m>);
+impl<'t> Iterator for NeighboursIter<'t> {
+    type Item = (Direction, Location<'t>);
 
-    fn next(&mut self) -> Option<(Direction, Location<'m>)> {
+    fn next(&mut self) -> Option<(Direction, Location<'t>)> {
         while let Some(direction) = self.directions.next() {
             if let ret @ Some(_) = self.location
                 .in_direction(direction)
@@ -155,7 +155,7 @@ pub enum Tile {
 }
 
 #[derive(Debug)]
-pub struct Map {
+pub struct Terrain {
     tiles: Vec<Vec<Tile>>, // TODO: Matix
 }
 
@@ -175,7 +175,7 @@ impl Dimension {
     }
 }
 
-impl Map {
+impl Terrain {
     pub fn width(&self) -> usize {
         self.tiles.iter().next().unwrap().len()
     }
@@ -190,7 +190,7 @@ impl Map {
             .and_then(|row| row.get(coordinates.0))
             .map(|tile| {
                 Location {
-                    map: &self,
+                    terrain: &self,
                     coordinates: coordinates,
                     tile: tile,
                 }
@@ -198,66 +198,66 @@ impl Map {
     }
 
     pub fn rows(&self) -> RowIter {
-        fn to_row<'m>((row_no, (tiles, map)): (usize, (&'m Vec<Tile>, &'m Map))) -> Row<'m> {
+        fn to_row<'t>((row_no, (tiles, terrain)): (usize, (&'t Vec<Tile>, &'t Terrain))) -> Row<'t> {
             Row {
-                map: map,
+                terrain: terrain,
                 row_no: row_no,
                 tiles: tiles.as_slice(),
             }
         }
-        let maps = Some(self).into_iter().cycle();
-        RowIter(self.tiles.iter().zip(maps).enumerate().map(to_row))
+        let terrains = Some(self).into_iter().cycle();
+        RowIter(self.tiles.iter().zip(terrains).enumerate().map(to_row))
     }
 }
 
 //TODO: Error
 #[derive(Debug)]
-pub enum MapBuilderError {
-    OutOfMap(Coordinates),
+pub enum TerrainBuilderError {
+    OutOfTerrain(Coordinates),
     CoordinatesAlreadyOccupied(Coordinates, Tile),
 }
 
-pub struct MapBuilder {
+pub struct TerrainBuilder {
     tiles: Vec<Vec<Tile>>, // TODO: Matix
 }
 
-impl MapBuilder {
-    pub fn new(width: Dimension, height: Dimension) -> MapBuilder {
+impl TerrainBuilder {
+    pub fn new(width: Dimension, height: Dimension) -> TerrainBuilder {
         let width = width.unwrap();
         let height = height.unwrap();
 
-        MapBuilder {
+        TerrainBuilder {
             tiles: (0..height)
                 .map(|_row| (0..width).map(|_col| Tile::Empty).collect())
                 .collect(),
         }
     }
 
-    pub fn place(mut self, coordinates: Coordinates, tile: Tile) -> Result<MapBuilder, MapBuilderError> {
+    pub fn place(mut self, coordinates: Coordinates, tile: Tile) -> Result<TerrainBuilder, TerrainBuilderError> {
         self.tiles
             .get_mut(coordinates.1)
             .and_then(|row| row.get_mut(coordinates.0))
-            .ok_or(MapBuilderError::OutOfMap(coordinates))
-            .and_then(|map_tile| if *map_tile != Tile::Empty {
-                Err(MapBuilderError::CoordinatesAlreadyOccupied(
+            .ok_or(TerrainBuilderError::OutOfTerrain(coordinates))
+            .and_then(|terrain_tile| if *terrain_tile != Tile::Empty {
+                Err(TerrainBuilderError::CoordinatesAlreadyOccupied(
                     coordinates,
-                    map_tile.clone(),
+                    terrain_tile.clone(),
                 ))
             } else {
-                Ok(map_tile)
+                Ok(terrain_tile)
             })
-            .map(|map_tile| *map_tile = tile)
+            .map(|terrain_tile| *terrain_tile = tile)
             .map(|_| self)
     }
 
-    pub fn build(self) -> Map {
-        Map {
+    pub fn build(self) -> Terrain {
+        Terrain {
             tiles: self.tiles
         }
     }
 
-    pub fn map_8x8_wall1() -> Map {
-        MapBuilder::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap())
+    pub fn terrain_8x8_wall1() -> Terrain {
+        TerrainBuilder::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap())
             .place(Coordinates(2, 5), Tile::Wall).unwrap()
             .place(Coordinates(3, 4), Tile::Wall).unwrap()
             .place(Coordinates(4, 3), Tile::Wall).unwrap()
@@ -266,49 +266,49 @@ impl MapBuilder {
     }
 }
     
-pub struct Row<'m> {
-    map: &'m Map,
+pub struct Row<'t> {
+    terrain: &'t Terrain,
     pub row_no: usize,
-    pub tiles: &'m [Tile],
+    pub tiles: &'t [Tile],
 }
 
-impl<'m> IntoIterator for Row<'m> {
-    type Item = Location<'m>;
-    type IntoIter = RowLocationsIter<'m>;
+impl<'t> IntoIterator for Row<'t> {
+    type Item = Location<'t>;
+    type IntoIter = RowLocationsIter<'t>;
 
-    fn into_iter(self) -> RowLocationsIter<'m> {
-        let maps = Some(self.map).into_iter().cycle();
+    fn into_iter(self) -> RowLocationsIter<'t> {
+        let terrains = Some(self.terrain).into_iter().cycle();
         RowLocationsIter {
             row_no: self.row_no,
-            row_iter: self.tiles.iter().zip(maps).enumerate(),
+            row_iter: self.tiles.iter().zip(terrains).enumerate(),
         }
     }
 }
 
-type ESIter<'i, T> = Enumerate<ZipIter<SliceIter<'i, T>, Cycle<OptionIntoIter<&'i Map>>>>;
-type ToRowFn<'m> = fn((usize, (&'m Vec<Tile>, &'m Map))) -> Row<'m>;
-pub struct RowIter<'m>(MapIter<ESIter<'m, Vec<Tile>>, ToRowFn<'m>>);
+type ESIter<'i, T> = Enumerate<ZipIter<SliceIter<'i, T>, Cycle<OptionIntoIter<&'i Terrain>>>>;
+type ToRowFn<'t> = fn((usize, (&'t Vec<Tile>, &'t Terrain))) -> Row<'t>;
+pub struct RowIter<'t>(MapIter<ESIter<'t, Vec<Tile>>, ToRowFn<'t>>);
 
-impl<'m> Iterator for RowIter<'m> {
-    type Item = Row<'m>;
+impl<'t> Iterator for RowIter<'t> {
+    type Item = Row<'t>;
 
-    fn next(&mut self) -> Option<Row<'m>> {
+    fn next(&mut self) -> Option<Row<'t>> {
         self.0.next()
     }
 }
 
-pub struct RowLocationsIter<'m> {
+pub struct RowLocationsIter<'t> {
     row_no: usize,
-    row_iter: ESIter<'m, Tile>,
+    row_iter: ESIter<'t, Tile>,
 }
 
-impl<'m> Iterator for RowLocationsIter<'m> {
-    type Item = Location<'m>;
+impl<'t> Iterator for RowLocationsIter<'t> {
+    type Item = Location<'t>;
 
-    fn next(&mut self) -> Option<Location<'m>> {
-        self.row_iter.next().map(|(col_no, (tile, map))| {
+    fn next(&mut self) -> Option<Location<'t>> {
+        self.row_iter.next().map(|(col_no, (tile, terrain))| {
             Location {
-                map: map,
+                terrain: terrain,
                 coordinates: Coordinates(col_no, self.row_no),
                 tile: tile,
             }
@@ -406,16 +406,16 @@ mod tests {
 
     #[test]
     fn location_neighbours() {
-        let map = MapBuilder::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap()).build();
+        let terrain = TerrainBuilder::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap()).build();
 
         assert_eq!(
-            map.location(Coordinates(0, 0))
+            terrain.location(Coordinates(0, 0))
                 .unwrap()
                 .neighbours()
                 .collect::<Vec<_>>(),
             vec![
-                (Direction::Right, map.location(Coordinates(1, 0)).unwrap()),
-                (Direction::Down, map.location(Coordinates(0, 1)).unwrap()),
+                (Direction::Right, terrain.location(Coordinates(1, 0)).unwrap()),
+                (Direction::Down, terrain.location(Coordinates(0, 1)).unwrap()),
             ]
         )
     }
