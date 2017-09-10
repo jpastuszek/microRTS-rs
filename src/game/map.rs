@@ -255,8 +255,17 @@ impl MapBuilder {
             tiles: self.tiles
         }
     }
-}
 
+    pub fn map_8x8_wall1() -> Map {
+        MapBuilder::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap())
+            .place(Coordinates(2, 5), Tile::Wall).unwrap()
+            .place(Coordinates(3, 4), Tile::Wall).unwrap()
+            .place(Coordinates(4, 3), Tile::Wall).unwrap()
+            .place(Coordinates(5, 2), Tile::Wall).unwrap()
+            .build()
+    }
+}
+    
 pub struct Row<'m> {
     map: &'m Map,
     pub row_no: usize,

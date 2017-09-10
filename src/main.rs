@@ -1,5 +1,5 @@
-extern crate itertools;
 extern crate ansi_term;
+extern crate itertools;
 extern crate pathfinding;
 
 mod game;
@@ -8,8 +8,8 @@ mod ai;
 
 use itertools::interleave;
 
-use game::{Player, Colour, AI, Owned, GameBuilder, Object, Unit, Building, Resource, MapBuilder, Dimension, Tile,
-           Coordinates};
+use game::{Building, Colour, Coordinates, GameBuilder, MapBuilder, Object, Owned, Player,
+           Resource, Unit, AI};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
 
@@ -19,10 +19,7 @@ fn main() {
     let rounds = 1;
     let cycles = 5;
 
-    let map = MapBuilder::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap())
-        .place(Coordinates(2, 5), Tile::Wall).unwrap()
-        .place(Coordinates(5, 2), Tile::Wall).unwrap()
-        .build();
+    let map = MapBuilder::map_8x8_wall1();
 
     let p1 = Player::new("Mario", Colour::Red);
     let p2 = Player::new("Luigi", Colour::Green);
@@ -34,12 +31,24 @@ fn main() {
     let mut game_builder = GameBuilder::new("foo", &map);
 
     game_builder
-        .place(Coordinates(0, 0), Object::Resources(Resource(10))).unwrap()
-        .place(Coordinates(7, 7), Object::Resources(Resource(10))).unwrap()
-        .place(Coordinates(2, 1), Object::Building(&p1, Building::Base(Resource(10)))).unwrap()
-        .place(Coordinates(5, 6), Object::Building(&p2, Building::Base(Resource(10)))).unwrap()
-        .place(Coordinates(2, 2), Object::Unit(&p1, Unit::Worker)).unwrap()
-        .place(Coordinates(5, 5), Object::Unit(&p2, Unit::Worker)).unwrap();
+        .place(Coordinates(0, 0), Object::Resources(Resource(10)))
+        .unwrap()
+        .place(Coordinates(7, 7), Object::Resources(Resource(10)))
+        .unwrap()
+        .place(
+            Coordinates(2, 1),
+            Object::Building(&p1, Building::Base(Resource(10))),
+        )
+        .unwrap()
+        .place(
+            Coordinates(5, 6),
+            Object::Building(&p2, Building::Base(Resource(10))),
+        )
+        .unwrap()
+        .place(Coordinates(2, 2), Object::Unit(&p1, Unit::Worker))
+        .unwrap()
+        .place(Coordinates(5, 5), Object::Unit(&p2, Unit::Worker))
+        .unwrap();
 
     for round in 0..rounds {
         let mut game = game_builder.build_for_round(round);
