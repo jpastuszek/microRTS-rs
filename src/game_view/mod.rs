@@ -1,5 +1,6 @@
 use pathfinding;
-use game::{Game, Entity, EntityID, Object, Unit, EntitiesIter, Player, Location, Direction, Resource};
+use game::{Direction, EntitiesIter, Entity, EntityID, Game, Location, Object, Player, Resource,
+           Unit};
 use std::ptr;
 use std::hash::{Hash, Hasher};
 use std::fmt;
@@ -100,14 +101,18 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Iterator for ResourcesIter<'p, 'm, 'g, 'v> {
         loop {
             if let Some((entity_id, entity)) = self.entities.next() {
                 match entity {
-                    &Entity { location, object: Object::Resources(ref resource), .. } => {
+                    &Entity {
+                        location,
+                        object: Object::Resources(ref resource),
+                        ..
+                    } => {
                         return Some(Resources {
                             entity_id: entity_id,
                             resource: resource,
-                            navigator: self.game_view.navigator(location)
+                            navigator: self.game_view.navigator(location),
                         })
                     }
-                    _ => continue
+                    _ => continue,
                 }
             } else {
                 return None;
@@ -125,7 +130,13 @@ pub struct Navigator<'p: 'm, 'm: 'g, 'g: 'v, 'v> {
 
 impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> fmt::Debug for Navigator<'p, 'm, 'g, 'v> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Navigator({}, {})[{:?}]", self.location.coordinates.0, self.location.coordinates.1, self.entity.map(|entity| entity.id))
+        write!(
+            f,
+            "Navigator({}, {})[{:?}]",
+            self.location.coordinates.0,
+            self.location.coordinates.1,
+            self.entity.map(|entity| entity.id)
+        )
     }
 }
 
@@ -148,28 +159,40 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Clone for Navigator<'p, 'm, 'g, 'v> {
         Navigator {
             game_view: self.game_view,
             location: self.location.clone(),
-            entity: self.entity
+            entity: self.entity,
         }
     }
 }
 
 impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
     pub fn in_direction(&self, direction: Direction) -> Option<Navigator<'p, 'm, 'g, 'v>> {
-        self.location.in_direction(direction).map(|location| {
-            self.game_view.navigator(location)
-        })
+        self.location
+            .in_direction(direction)
+            .map(|location| self.game_view.navigator(location))
     }
 
-    pub fn find_path_dijkstra(&self, to: &Navigator<'p, 'm, 'g, 'v>) -> Option<(Vec<Navigator<'p, 'm, 'g, 'v>>, u64)> {
-        let to_neighbour_locations = to.location.neighbours().map(|(_direction, location)| location).collect::<Vec<_>>();
+    pub fn find_path_dijkstra(
+        &self,
+        to: &Navigator<'p, 'm, 'g, 'v>,
+    ) -> Option<(Vec<Navigator<'p, 'm, 'g, 'v>>, u64)> {
+        let to_neighbour_locations = to.location
+            .neighbours()
+            .map(|(_direction, location)| location)
+            .collect::<Vec<_>>();
 
         // TODO: if to is not walkable use neighbour location else use to directly
         pathfinding::dijkstra(
             self,
-            |navigator| navigator.location.neighbours()
-                .map(|(_direction, location)| (self.game_view.navigator(location), 1))
-                .filter(|&(ref target, _)| target.walkable() || target == to),
-            |navigator| to_neighbour_locations.contains(&navigator.location)
+            |navigator| {
+                navigator
+                    .location
+                    .neighbours()
+                    .map(|(_direction, location)| {
+                        (self.game_view.navigator(location), 1)
+                    })
+                    .filter(|&(ref target, _)| target.walkable() || target == to)
+            },
+            |navigator| to_neighbour_locations.contains(&navigator.location),
         )
     }
 
