@@ -14,9 +14,9 @@ impl Coordinates {
     pub fn in_direction(&self, direction: Direction) -> Option<Coordinates> {
         match direction {
             Direction::Up if self.1 > 0 => Some(Coordinates(self.0, self.1 - 1)),
-            Direction::Right if self.0 < usize::max_value() => Some(
-                Coordinates(self.0 + 1, self.1),
-            ),
+            Direction::Right if self.0 < usize::max_value() => {
+                Some(Coordinates(self.0 + 1, self.1))
+            }
             Direction::Down if self.1 < usize::max_value() => Some(Coordinates(self.0, self.1 + 1)),
             Direction::Left if self.0 > 0 => Some(Coordinates(self.0 - 1, self.1)),
             _ => None,
@@ -25,73 +25,21 @@ impl Coordinates {
 
     pub fn direction_to(&self, to: Coordinates) -> Option<Direction> {
         if self.0 == to.0 && self.1 == to.1 {
-            return None
+            return None;
         }
 
-        Some(if to.1 + to.0 >= self.1 + self.0 && to.1 + self.0 > to.0 + self.1 {
-            Direction::Down
-        } else if to.1 + self.0 <= to.0 + self.1 && to.1 + to.0 > self.1 + self.0 {
-            Direction::Right
-        } else if to.1 + to.0 <= self.1 + self.0 && to.1 + self.0 < to.0 + self.1 {
-            Direction::Up
-        } else {
-            Direction::Left
-        })
+        Some(
+            if to.1 + to.0 >= self.1 + self.0 && to.1 + self.0 > to.0 + self.1 {
+                Direction::Down
+            } else if to.1 + self.0 <= to.0 + self.1 && to.1 + to.0 > self.1 + self.0 {
+                Direction::Right
+            } else if to.1 + to.0 <= self.1 + self.0 && to.1 + self.0 < to.0 + self.1 {
+                Direction::Up
+            } else {
+                Direction::Left
+            },
+        )
     }
-}
-
-#[test]
-fn in_direction_overflow() {
-    assert!(Coordinates(0, 0).in_direction(Direction::Up).is_none());
-    assert!(Coordinates(0, 0).in_direction(Direction::Left).is_none());
-    assert!(Coordinates(0, 0).in_direction(Direction::Down).is_some());
-    assert!(Coordinates(0, 0).in_direction(Direction::Right).is_some());
-
-    assert!(Coordinates(1, 1).in_direction(Direction::Up).is_some());
-    assert!(Coordinates(1, 1).in_direction(Direction::Left).is_some());
-    assert!(Coordinates(1, 1).in_direction(Direction::Down).is_some());
-    assert!(Coordinates(1, 1).in_direction(Direction::Right).is_some());
-
-    assert!(
-        Coordinates(usize::max_value(), usize::max_value())
-            .in_direction(Direction::Up)
-            .is_some()
-    );
-    assert!(
-        Coordinates(usize::max_value(), usize::max_value())
-            .in_direction(Direction::Left)
-            .is_some()
-    );
-    assert!(
-        Coordinates(usize::max_value(), usize::max_value())
-            .in_direction(Direction::Down)
-            .is_none()
-    );
-    assert!(
-        Coordinates(usize::max_value(), usize::max_value())
-            .in_direction(Direction::Right)
-            .is_none()
-    );
-}
-
-#[test]
-fn test_direction_to() {
-    assert_eq!(Coordinates(1, 1).direction_to(Coordinates(1, 1)), None);
-
-    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(1, 0)), Some(Direction::Right));
-    assert_eq!(Coordinates(2, 0).direction_to(Coordinates(1, 0)), Some(Direction::Left));
-
-    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(0, 1)), Some(Direction::Down));
-    assert_eq!(Coordinates(0, 2).direction_to(Coordinates(0, 1)), Some(Direction::Up));
-
-    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(2, 1)), Some(Direction::Right));
-    assert_eq!(Coordinates(4, 0).direction_to(Coordinates(2, 1)), Some(Direction::Left));
-
-    assert_eq!(Coordinates(0, 2).direction_to(Coordinates(2, 1)), Some(Direction::Right));
-    assert_eq!(Coordinates(4, 2).direction_to(Coordinates(2, 1)), Some(Direction::Left));
-
-    assert_eq!(Coordinates(0, 0).direction_to(Coordinates(1, 2)), Some(Direction::Down));
-    assert_eq!(Coordinates(0, 4).direction_to(Coordinates(1, 2)), Some(Direction::Up));
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -104,7 +52,9 @@ pub enum Direction {
 
 impl Direction {
     fn clockwise() -> DirectionClockwiseIter {
-        DirectionClockwiseIter { direction: Some(Direction::Up) }
+        DirectionClockwiseIter {
+            direction: Some(Direction::Up),
+        }
     }
 }
 
@@ -160,11 +110,9 @@ impl<'m> Location<'m> {
     }
 
     pub fn in_direction(&self, direction: Direction) -> Option<Location<'m>> {
-        self.coordinates.in_direction(direction).and_then(
-            |coordinates| {
-                self.map.location(coordinates)
-            },
-        )
+        self.coordinates
+            .in_direction(direction)
+            .and_then(|coordinates| self.map.location(coordinates))
     }
 
     pub fn direction_to(&self, to: Location<'m>) -> Option<Direction> {
@@ -189,31 +137,15 @@ impl<'m> Iterator for NeighboursIter<'m> {
 
     fn next(&mut self) -> Option<(Direction, Location<'m>)> {
         while let Some(direction) = self.directions.next() {
-            if let ret @ Some(_) = self.location.in_direction(direction).map(|location| {
-                (direction, location)
-            })
+            if let ret @ Some(_) = self.location
+                .in_direction(direction)
+                .map(|location| (direction, location))
             {
                 return ret;
             }
         }
         None
     }
-}
-
-#[test]
-fn location_neighbours() {
-    let map = Map::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap());
-
-    assert_eq!(
-        map.location(Coordinates(0, 0))
-            .unwrap()
-            .neighbours()
-            .collect::<Vec<_>>(),
-        vec![
-            (Direction::Right, map.location(Coordinates(1, 0)).unwrap()),
-            (Direction::Down, map.location(Coordinates(0, 1)).unwrap()),
-        ]
-    )
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -265,9 +197,9 @@ impl Map {
     }
 
     pub fn get_mut_tile(&mut self, coordinates: Coordinates) -> Option<&mut Tile> {
-        self.tiles.get_mut(coordinates.1).and_then(|row| {
-            row.get_mut(coordinates.0)
-        })
+        self.tiles
+            .get_mut(coordinates.1)
+            .and_then(|row| row.get_mut(coordinates.0))
     }
 
     pub fn location(&self, coordinates: Coordinates) -> Option<Location> {
@@ -346,16 +278,120 @@ impl<'m> Iterator for RowLocationsIter<'m> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_direction_iter() {
-    assert_eq!(
-        Direction::clockwise().collect::<Vec<_>>(),
-        vec![
-            Direction::Up,
-            Direction::Right,
-            Direction::Down,
-            Direction::Left,
-        ]
-    )
+    #[test]
+    fn in_direction_overflow() {
+        assert!(Coordinates(0, 0).in_direction(Direction::Up).is_none());
+        assert!(Coordinates(0, 0).in_direction(Direction::Left).is_none());
+        assert!(Coordinates(0, 0).in_direction(Direction::Down).is_some());
+        assert!(Coordinates(0, 0).in_direction(Direction::Right).is_some());
+
+        assert!(Coordinates(1, 1).in_direction(Direction::Up).is_some());
+        assert!(Coordinates(1, 1).in_direction(Direction::Left).is_some());
+        assert!(Coordinates(1, 1).in_direction(Direction::Down).is_some());
+        assert!(Coordinates(1, 1).in_direction(Direction::Right).is_some());
+
+        assert!(
+            Coordinates(usize::max_value(), usize::max_value())
+                .in_direction(Direction::Up)
+                .is_some()
+        );
+        assert!(
+            Coordinates(usize::max_value(), usize::max_value())
+                .in_direction(Direction::Left)
+                .is_some()
+        );
+        assert!(
+            Coordinates(usize::max_value(), usize::max_value())
+                .in_direction(Direction::Down)
+                .is_none()
+        );
+        assert!(
+            Coordinates(usize::max_value(), usize::max_value())
+                .in_direction(Direction::Right)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn test_direction_to() {
+        assert_eq!(Coordinates(1, 1).direction_to(Coordinates(1, 1)), None);
+
+        assert_eq!(
+            Coordinates(0, 0).direction_to(Coordinates(1, 0)),
+            Some(Direction::Right)
+        );
+        assert_eq!(
+            Coordinates(2, 0).direction_to(Coordinates(1, 0)),
+            Some(Direction::Left)
+        );
+
+        assert_eq!(
+            Coordinates(0, 0).direction_to(Coordinates(0, 1)),
+            Some(Direction::Down)
+        );
+        assert_eq!(
+            Coordinates(0, 2).direction_to(Coordinates(0, 1)),
+            Some(Direction::Up)
+        );
+
+        assert_eq!(
+            Coordinates(0, 0).direction_to(Coordinates(2, 1)),
+            Some(Direction::Right)
+        );
+        assert_eq!(
+            Coordinates(4, 0).direction_to(Coordinates(2, 1)),
+            Some(Direction::Left)
+        );
+
+        assert_eq!(
+            Coordinates(0, 2).direction_to(Coordinates(2, 1)),
+            Some(Direction::Right)
+        );
+        assert_eq!(
+            Coordinates(4, 2).direction_to(Coordinates(2, 1)),
+            Some(Direction::Left)
+        );
+
+        assert_eq!(
+            Coordinates(0, 0).direction_to(Coordinates(1, 2)),
+            Some(Direction::Down)
+        );
+        assert_eq!(
+            Coordinates(0, 4).direction_to(Coordinates(1, 2)),
+            Some(Direction::Up)
+        );
+    }
+
+    #[test]
+    fn location_neighbours() {
+        let map = Map::new(Dimension::new(8).unwrap(), Dimension::new(8).unwrap());
+
+        assert_eq!(
+            map.location(Coordinates(0, 0))
+                .unwrap()
+                .neighbours()
+                .collect::<Vec<_>>(),
+            vec![
+                (Direction::Right, map.location(Coordinates(1, 0)).unwrap()),
+                (Direction::Down, map.location(Coordinates(0, 1)).unwrap()),
+            ]
+        )
+    }
+
+    #[test]
+    fn test_direction_iter() {
+        assert_eq!(
+            Direction::clockwise().collect::<Vec<_>>(),
+            vec![
+                Direction::Up,
+                Direction::Right,
+                Direction::Down,
+                Direction::Left,
+            ]
+        )
+    }
 }
