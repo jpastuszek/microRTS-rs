@@ -6,10 +6,10 @@ pub struct IdleAI;
 
 impl AI for IdleAI {
     type PersistentState = EmptyPersistentState;
-    fn update<'p: 'g, 's: 'g, 't: 'g, 'g>(
+    fn update<'p: 's, 's: 'gs, 't: 'gs, 'gs>(
         &mut self,
         _sate: &'s mut Self::PersistentState,
-        _view: GameView<'p, 't, 'g>,
+        _view: GameView<'p, 't, 'gs>,
     ) -> Vec<Order> {
         // no desires!
         Vec::new()

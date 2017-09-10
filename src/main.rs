@@ -8,7 +8,7 @@ mod ai;
 
 use itertools::interleave;
 
-use game::{Building, Colour, Coordinates, GameBuilder, TerrainBuilder, Object, Owned, Player,
+use game::{Building, Colour, Coordinates, GameStateBuilder, TerrainBuilder, Object, Owned, Player,
            Resource, Unit, AI};
 use ai::idle_ai::IdleAI;
 use ai::test_ai::TestAI;
@@ -28,7 +28,7 @@ fn main() {
     let mut p1_state = p1.new_state::<IdleAI>();
     let mut p2_state = p2.new_state::<TestAI>();
 
-    let mut game_builder = GameBuilder::new("foo", &terrain);
+    let mut game_builder = GameStateBuilder::new("foo", &terrain);
 
     game_builder
         .place(Coordinates(0, 0), Object::Resources(Resource(10)))
