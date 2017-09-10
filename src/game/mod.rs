@@ -125,12 +125,12 @@ impl<'p, 'm> Game<'p, 'm> {
 
     pub fn apply<A>(&mut self, desires: A)
     where
-        A: Iterator<Item = Owned<'p, Desire>>,
+        A: Iterator<Item = Owned<'p, Order>>,
     {
         for Owned(player, desire) in desires {
             println!("{}: {:?}", player.name, desire);
             match desire {
-                Desire::Move(entity_id, direction) => {
+                Order::Move(entity_id, direction) => {
                     self.move_entity(player, entity_id, direction).expect(
                         "TODO: collect rule violations and pass to AI",
                     )
@@ -182,7 +182,7 @@ impl<'p, 'm> GameBuilder<'p, 'm> {
 }
 
 #[derive(Debug)]
-pub enum Desire {
+pub enum Order {
     Move(EntityID, Direction),
 }
 

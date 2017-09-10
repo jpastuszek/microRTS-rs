@@ -1,4 +1,4 @@
-use game::{AI, EmptyPersistentState, Desire, Unit};
+use game::{AI, EmptyPersistentState, Order, Unit};
 use game_view::GameView;
 
 #[derive(Default)]
@@ -10,7 +10,7 @@ impl AI for TestAI {
         &mut self,
         _sate: &'s mut Self::PersistentState,
         view: GameView<'p, 'm, 'g>,
-    ) -> Vec<Desire> {
+    ) -> Vec<Order> {
         let mut desires = Vec::new();
 
         //TODO: remember path calculation
@@ -26,7 +26,7 @@ impl AI for TestAI {
                     if let Some(&(ref path, _cost)) = resources_paths.first() {
                         path.iter().skip(1).next()
                             .and_then(|next_navigator| unit.navigator.direction_to(next_navigator))
-                            .map(|direction| desires.push(Desire::Move(unit.entity_id, direction)));
+                            .map(|direction| desires.push(Order::Move(unit.entity_id, direction)));
                     }
                 }
                 _ => (),

@@ -1,6 +1,6 @@
 pub use ansi_term::Colour;
 
-use game::Desire;
+use game::Order;
 use game_view::GameView;
 
 #[derive(Debug)]
@@ -42,7 +42,7 @@ pub trait AI: Default {
         &mut self,
         sate: &'s mut Self::PersistentState,
         view: GameView<'p, 'm, 'g>,
-    ) -> Vec<Desire>;
+    ) -> Vec<Order>;
 }
 
 #[derive(Default)]

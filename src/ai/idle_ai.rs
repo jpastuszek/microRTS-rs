@@ -1,4 +1,4 @@
-use game::{AI, EmptyPersistentState, Desire};
+use game::{AI, EmptyPersistentState, Order};
 use game_view::GameView;
 
 #[derive(Default)]
@@ -10,7 +10,7 @@ impl AI for IdleAI {
         &mut self,
         _sate: &'s mut Self::PersistentState,
         _view: GameView<'p, 'm, 'g>,
-    ) -> Vec<Desire> {
+    ) -> Vec<Order> {
         // no desires!
         Vec::new()
     }

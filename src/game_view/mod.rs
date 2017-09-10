@@ -163,6 +163,7 @@ impl<'p: 'm, 'm: 'g, 'g: 'v, 'v> Navigator<'p, 'm, 'g, 'v> {
     pub fn find_path_dijkstra(&self, to: &Navigator<'p, 'm, 'g, 'v>) -> Option<(Vec<Navigator<'p, 'm, 'g, 'v>>, u64)> {
         let to_neighbour_locations = to.location.neighbours().map(|(_direction, location)| location).collect::<Vec<_>>();
 
+        // TODO: if to is not walkable use neighbour location else use to directly
         pathfinding::dijkstra(
             self,
             |navigator| navigator.location.neighbours()
