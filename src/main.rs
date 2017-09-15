@@ -1,17 +1,12 @@
-extern crate ansi_term;
+extern crate micro_rts;
 extern crate itertools;
-extern crate pathfinding;
-
-mod game;
-mod game_view;
-mod ai;
 
 use itertools::interleave;
 
-use game::{Building, Colour, Coordinates, GameStateBuilder, TerrainBuilder, Object, Owned, Player,
+use micro_rts::game::{Building, Colour, Coordinates, GameStateBuilder, TerrainBuilder, Object, Owned, Player,
            Resource, Unit, AI};
-use ai::idle_ai::IdleAI;
-use ai::test_ai::TestAI;
+use micro_rts::ai::idle_ai::IdleAI;
+use micro_rts::ai::test_ai::TestAI;
 
 fn main() {
     println!("Starting game");
